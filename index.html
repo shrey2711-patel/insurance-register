@@ -3762,10 +3762,12 @@ function saveSecuritySettings() {
 const DEMO_FIREBASE_CONFIG = {
   apiKey: "AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko",
   authDomain: "midas-money-care-insurance-reg.firebaseapp.com",
+  databaseURL: "https://midas-money-care-insurance-reg-default-rtdb.firebaseio.com",
   projectId: "midas-money-care-insurance-reg",
   storageBucket: "midas-money-care-insurance-reg.firebasestorage.app",
   messagingSenderId: "709834917216",
-  appId: "1:709834917216:web:147b98578fcf3b33c34a05"
+  appId: "1:709834917216:web:147b98578fcf3b33c34a05",
+  measurementId: "G-YYJWZN2L19"
 };
 
 let firebaseInitialized = false;
@@ -3779,11 +3781,13 @@ function initFirebase() {
   const apiKey = localStorage.getItem('MMC_FIREBASE_API_KEY') || DEMO_FIREBASE_CONFIG.apiKey;
   const projectId = localStorage.getItem('MMC_FIREBASE_PROJECT_ID') || DEMO_FIREBASE_CONFIG.projectId;
   const authDomain = localStorage.getItem('MMC_FIREBASE_AUTH_DOMAIN') || DEMO_FIREBASE_CONFIG.authDomain;
+  const databaseURL = localStorage.getItem('MMC_FIREBASE_DATABASE_URL') || DEMO_FIREBASE_CONFIG.databaseURL;
   const storageBucket = localStorage.getItem('MMC_FIREBASE_STORAGE_BUCKET') || DEMO_FIREBASE_CONFIG.storageBucket;
   const messagingSenderId = localStorage.getItem('MMC_FIREBASE_SENDER_ID') || DEMO_FIREBASE_CONFIG.messagingSenderId;
   const appId = localStorage.getItem('MMC_FIREBASE_APP_ID') || DEMO_FIREBASE_CONFIG.appId;
+  const measurementId = localStorage.getItem('MMC_FIREBASE_MEASUREMENT_ID') || DEMO_FIREBASE_CONFIG.measurementId;
   
-  const config = { apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId };
+  const config = { apiKey, authDomain, databaseURL, projectId, storageBucket, messagingSenderId, appId, measurementId };
   
   try {
     if (firebase.apps.length === 0) {
@@ -4192,9 +4196,11 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko');
     localStorage.setItem('MMC_FIREBASE_PROJECT_ID', 'midas-money-care-insurance-reg');
     localStorage.setItem('MMC_FIREBASE_AUTH_DOMAIN', 'midas-money-care-insurance-reg.firebaseapp.com');
+    localStorage.setItem('MMC_FIREBASE_DATABASE_URL', 'https://midas-money-care-insurance-reg-default-rtdb.firebaseio.com');
     localStorage.setItem('MMC_FIREBASE_STORAGE_BUCKET', 'midas-money-care-insurance-reg.firebasestorage.app');
     localStorage.setItem('MMC_FIREBASE_SENDER_ID', '709834917216');
     localStorage.setItem('MMC_FIREBASE_APP_ID', '1:709834917216:web:147b98578fcf3b33c34a05');
+    localStorage.setItem('MMC_FIREBASE_MEASUREMENT_ID', 'G-YYJWZN2L19');
   }
   
   // Force upgrade/correction of old/incorrect API keys in local storage
