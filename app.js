@@ -1,4 +1,43 @@
 // =====================================================
+// LOCALSTORAGE NAMESPACING LAYER (Origin conflict fix)
+// =====================================================
+const LS_PREFIX = "MMC_INS_";
+const KEYS_TO_MIGRATE = [
+  'insurance_ledger',
+  'insurance_ledger_backup',
+  'simulated_date',
+  'whatsapp_template',
+  'waSent',
+  'MMC_FIREBASE_ENABLED',
+  'MMC_FIREBASE_API_KEY',
+  'MMC_FIREBASE_PROJECT_ID',
+  'MMC_FIREBASE_AUTH_DOMAIN',
+  'MMC_FIREBASE_DATABASE_URL',
+  'MMC_FIREBASE_STORAGE_BUCKET',
+  'MMC_FIREBASE_SENDER_ID',
+  'MMC_FIREBASE_APP_ID',
+  'MMC_FIREBASE_MEASUREMENT_ID',
+  'MMC_GDRIVE_ENABLED',
+  'MMC_GDRIVE_WEBAPP_URL',
+  'MMC_GDRIVE_FOLDER_ID'
+];
+
+KEYS_TO_MIGRATE.forEach(key => {
+  const newKey = LS_PREFIX + key;
+  const oldValue = window.localStorage.getItem(key);
+  const newValue = window.localStorage.getItem(newKey);
+  if (oldValue !== null && newValue === null) {
+    window.localStorage.setItem(newKey, oldValue);
+  }
+});
+
+const storage = {
+  getItem: (key) => window.localStorage.getItem(LS_PREFIX + key),
+  setItem: (key, val) => window.localStorage.setItem(LS_PREFIX + key, val),
+  removeItem: (key) => window.localStorage.removeItem(LS_PREFIX + key)
+};
+
+// =====================================================
 // FIREBASE CONFIGURATION
 // =====================================================
 // Import the functions you need from the SDKs you need
@@ -73,7 +112,7 @@ function initDatabase() {
   request.onerror = function() {
     logActivity("❌ Permanent database connection failed! Standard Storage fallback active.", "err");
     // Fallback to localStorage if blocked
-    const fallbackData = localStorage.getItem('insurance_ledger');
+    const fallbackData = storage.getItem('insurance_ledger');
     if (fallbackData) {
       try { DATA = JSON.parse(fallbackData); } catch(ex) { DATA = []; }
     } else {
@@ -83,7 +122,7 @@ function initDatabase() {
   };
 
   // Pre-fill simulator to actual local date or preserved simulated date
-  const preservedSimDate = localStorage.getItem('simulated_date');
+  const preservedSimDate = storage.getItem('simulated_date');
   if (preservedSimDate) {
     SIMULATED_TODAY = new Date(preservedSimDate);
     document.getElementById('dateSimulator').value = preservedSimDate;
@@ -95,9 +134,9 @@ function initDatabase() {
   SIMULATED_TODAY.setHours(0,0,0,0);
   
   // Set default message template if not set
-  if (!localStorage.getItem('whatsapp_template')) {
+  if (!storage.getItem('whatsapp_template')) {
     const defaultTemplate = `Dear {name},\n\nThis is a friendly reminder that the insurance for your vehicle {vehicle} ({plate}) {expiry_status}.\n\n🚗 Vehicle: {vehicle}\n🔖 Plate Number: {plate}\n🏢 Provider: {insurance}\n📅 Expiry Date: {expiry}\n\nRemarks/Notes: {remarks}\n\nPlease renew at your earliest convenience to avoid penalties.\n\nThank you for choosing us!`;
-    localStorage.setItem('whatsapp_template', defaultTemplate);
+    storage.setItem('whatsapp_template', defaultTemplate);
   }
 }
 
@@ -106,7 +145,7 @@ function loadAllRecordsFromDB() {
   const store = transaction.objectStore(STORE_NAME);
   
   // Migration check: check if localStorage has data to migrate
-  const localData = localStorage.getItem('insurance_ledger');
+  const localData = storage.getItem('insurance_ledger');
   if (localData) {
     try {
       const parsed = JSON.parse(localData);
@@ -120,7 +159,7 @@ function loadAllRecordsFromDB() {
             migratedCount++;
             if (migratedCount === parsed.length) {
               logActivity(`✅ Migration Complete: safely stored ${parsed.length} client files permanently!`, "info");
-              localStorage.removeItem('insurance_ledger');
+              storage.removeItem('insurance_ledger');
               fetchRecords(store);
             }
           };
@@ -185,7 +224,7 @@ function saveDatabase() {
       delete copy.kyc_docs;
       return copy;
     });
-    localStorage.setItem('insurance_ledger_backup', JSON.stringify(backupTextOnly));
+    storage.setItem('insurance_ledger_backup', JSON.stringify(backupTextOnly));
   } catch(e) {
     // silently fail
   }
@@ -848,7 +887,7 @@ function updateSimulatedDate() {
   if (!selectedDate) return;
   SIMULATED_TODAY = new Date(selectedDate);
   SIMULATED_TODAY.setHours(0,0,0,0);
-  localStorage.setItem('simulated_date', selectedDate);
+  storage.setItem('simulated_date', selectedDate);
   
   // Update Header Date label
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
@@ -860,7 +899,7 @@ function updateSimulatedDate() {
 function resetSimulatedDate() {
   const todayStr = new Date().toISOString().split('T')[0];
   document.getElementById('dateSimulator').value = todayStr;
-  localStorage.removeItem('simulated_date');
+  storage.removeItem('simulated_date');
   
   SIMULATED_TODAY = new Date(todayStr);
   SIMULATED_TODAY.setHours(0,0,0,0);
@@ -883,7 +922,7 @@ function applyFiltersAndStats() {
   const targetYear = document.getElementById('targetYearFilter').value;
   
   // Track sent set
-  const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
+  const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
   
   // Enrich items with computed statistics
   const enriched = DATA.map((item, idx) => {
@@ -1116,7 +1155,7 @@ function updateSelectedCount() {
 // MESSAGING & BULK DISPATCHER
 // ==============================================
 function buildWhatsAppLink(item) {
-  const template = localStorage.getItem('whatsapp_template');
+  const template = storage.getItem('whatsapp_template');
   const phone = item.phone.replace(/[^0-9]/g, '');
   
   const statusStr = item.daysLeft < 0 
@@ -1142,9 +1181,9 @@ function buildWhatsAppLink(item) {
 }
 
 function markAsSent(id) {
-  const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
+  const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
   sentSet.add(id);
-  localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+  storage.setItem('waSent', JSON.stringify([...sentSet]));
   
   const item = DATA.find(x => String(x.id) === String(id));
   if (item) {
@@ -1180,9 +1219,9 @@ function triggerBulkSend() {
         const link = buildWhatsAppLink(item);
         window.open(link, '_blank');
         
-        const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
+        const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
         sentSet.add(targetId);
-        localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+        storage.setItem('waSent', JSON.stringify([...sentSet]));
       }
       
       index++;
@@ -1316,7 +1355,7 @@ function handleJSONBackupSelect(input) {
 // MESSAGE TEMPLATING SYSTEM
 // ==============================================
 function openTemplateModal() {
-  document.getElementById('messageTemplateInput').value = localStorage.getItem('whatsapp_template');
+  document.getElementById('messageTemplateInput').value = storage.getItem('whatsapp_template');
   updateTemplatePreview();
   openModal('templateModal');
 }
@@ -1352,7 +1391,7 @@ function updateTemplatePreview() {
 
 function saveMessageTemplate() {
   const template = document.getElementById('messageTemplateInput').value;
-  localStorage.setItem('whatsapp_template', template);
+  storage.setItem('whatsapp_template', template);
   closeModal('templateModal');
   showToast("WhatsApp message template saved successfully!");
   logActivity("💬 Custom WhatsApp reminder message template updated.", "info");
@@ -1365,9 +1404,9 @@ function wipeEntireRegister() {
 
   const finishLocalWipe = () => {
     DATA = [];
-    localStorage.removeItem('insurance_ledger');
-    localStorage.removeItem('insurance_ledger_backup');
-    localStorage.removeItem('waSent');
+    storage.removeItem('insurance_ledger');
+    storage.removeItem('insurance_ledger_backup');
+    storage.removeItem('waSent');
     const selectAll = document.getElementById('selectAllCheckbox');
     if (selectAll) selectAll.checked = false;
     applyFiltersAndStats();
@@ -1449,20 +1488,20 @@ window.addEventListener('click', (e) => {
 // SECURITY LOCK & OTP GATEWAY CONTROLLER
 // ==============================================
 function checkSecurityAccess() {
-  localStorage.setItem('MMC_SECURITY_SETUP', 'true');
-  localStorage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
-  const isSetup = localStorage.getItem('MMC_SECURITY_SETUP') === "true";
+  storage.setItem('MMC_SECURITY_SETUP', 'true');
+  storage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
+  const isSetup = storage.getItem('MMC_SECURITY_SETUP') === "true";
   
   if (!isSetup) {
     // Silently pre-load the user details inside local settings!
-    localStorage.setItem('MMC_SECURITY_SETUP', 'true');
-    localStorage.setItem('MMC_SECURITY_EMAIL', 'shrey00557@gmail.com');
-    localStorage.setItem('MMC_SECURITY_PHONE', '9824500557');
-    localStorage.setItem('MMC_SECURITY_PASSWORD', 'Shrey@2711'); // Default Master Backup Unlock Key!
+    storage.setItem('MMC_SECURITY_SETUP', 'true');
+    storage.setItem('MMC_SECURITY_EMAIL', 'shrey00557@gmail.com');
+    storage.setItem('MMC_SECURITY_PHONE', '9824500557');
+    storage.setItem('MMC_SECURITY_PASSWORD', 'Shrey@2711'); // Default Master Backup Unlock Key!
     logActivity("🔑 Security initialized: Credentials loaded for shrey00557@gmail.com & 9824500557.", "info");
-  } else if (localStorage.getItem('MMC_SECURITY_PASSWORD') === 'Midasmoneycare@2026') {
+  } else if (storage.getItem('MMC_SECURITY_PASSWORD') === 'Midasmoneycare@2026') {
     // Upgrade existing default password to the new requested master key
-    localStorage.setItem('MMC_SECURITY_PASSWORD', 'Shrey@2711');
+    storage.setItem('MMC_SECURITY_PASSWORD', 'Shrey@2711');
     logActivity("🔑 Security updated: Master Backup Unlock Key changed to Shrey@2711.", "info");
   }
   
@@ -1483,8 +1522,8 @@ function checkSecurityAccess() {
 }
 
 function submitSecuritySetup() {
-  localStorage.setItem('MMC_SECURITY_SETUP', 'true');
-  localStorage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
+  storage.setItem('MMC_SECURITY_SETUP', 'true');
+  storage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
   document.getElementById('securityOverlay').style.display = 'none';
   showToast("Password access enabled successfully!");
   return;
@@ -1498,10 +1537,10 @@ function submitSecuritySetup() {
     return;
   }
   
-  localStorage.setItem('MMC_SECURITY_SETUP', 'true');
-  localStorage.setItem('MMC_SECURITY_EMAIL', email);
-  localStorage.setItem('MMC_SECURITY_PHONE', phone);
-  localStorage.setItem('MMC_SECURITY_PASSWORD', password);
+  storage.setItem('MMC_SECURITY_SETUP', 'true');
+  storage.setItem('MMC_SECURITY_EMAIL', email);
+  storage.setItem('MMC_SECURITY_PHONE', phone);
+  storage.setItem('MMC_SECURITY_PASSWORD', password);
   
   document.getElementById('securityOverlay').style.display = 'none';
   showToast("Security Lock enabled successfully!");
@@ -1514,16 +1553,16 @@ function sendAuthOTP(method) {
   window.ACTIVE_OTP = otp;
   window.ACTIVE_OTP_TIME = Date.now();
   
-  const regEmail = localStorage.getItem('MMC_SECURITY_EMAIL') || 'shrey00557@gmail.com';
-  const regPhone = localStorage.getItem('MMC_SECURITY_PHONE') || '9824500557';
+  const regEmail = storage.getItem('MMC_SECURITY_EMAIL') || 'shrey00557@gmail.com';
+  const regPhone = storage.getItem('MMC_SECURITY_PHONE') || '9824500557';
   
   let sentRealEmail = false;
   let sentRealSms = false;
   
   // 1. EmailJS (Real Email OTP)
-  const emailJsPublicKey = localStorage.getItem('MMC_EMAILJS_PUBLIC_KEY');
-  const emailJsServiceId = localStorage.getItem('MMC_EMAILJS_SERVICE_ID');
-  const emailJsTemplateId = localStorage.getItem('MMC_EMAILJS_TEMPLATE_ID');
+  const emailJsPublicKey = storage.getItem('MMC_EMAILJS_PUBLIC_KEY');
+  const emailJsServiceId = storage.getItem('MMC_EMAILJS_SERVICE_ID');
+  const emailJsTemplateId = storage.getItem('MMC_EMAILJS_TEMPLATE_ID');
   
   if (emailJsPublicKey && emailJsServiceId && emailJsTemplateId) {
     try {
@@ -1545,9 +1584,9 @@ function sendAuthOTP(method) {
   }
   
   // 2. Twilio (Real SMS/WhatsApp OTP)
-  const twilioSid = localStorage.getItem('MMC_TWILIO_SID');
-  const twilioToken = localStorage.getItem('MMC_TWILIO_TOKEN');
-  const twilioNumber = localStorage.getItem('MMC_TWILIO_NUMBER');
+  const twilioSid = storage.getItem('MMC_TWILIO_SID');
+  const twilioToken = storage.getItem('MMC_TWILIO_TOKEN');
+  const twilioNumber = storage.getItem('MMC_TWILIO_NUMBER');
   
   if (twilioSid && twilioToken && twilioNumber) {
     try {
@@ -1669,7 +1708,7 @@ function verifyAuthOTP() {
 
 function verifyBackupPassword() {
   const enteredPass = document.getElementById('backupPasswordInput').value.trim();
-  const actualPass = localStorage.getItem('MMC_SECURITY_PASSWORD');
+  const actualPass = storage.getItem('MMC_SECURITY_PASSWORD');
   
   if (!enteredPass) {
     showToast("Enter your backup master password!", true);
@@ -1699,22 +1738,22 @@ function backToOtpMethods() {
 // Security API Settings Modal controls
 function openSecuritySettingsModal() {
   // Load owner details
-  document.getElementById('settingsOwnerPassword').value = localStorage.getItem('MMC_SECURITY_PASSWORD') || MASTER_PASSWORD;
+  document.getElementById('settingsOwnerPassword').value = storage.getItem('MMC_SECURITY_PASSWORD') || MASTER_PASSWORD;
   
   // Load credentials
   
   // Load Firebase Config
-  const fbEnabled = localStorage.getItem('MMC_FIREBASE_ENABLED') === "true";
+  const fbEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   const fbEnabledCheckbox = document.getElementById('settingsFirebaseEnabled');
   fbEnabledCheckbox.checked = fbEnabled;
   document.getElementById('firebaseConfigFields').style.display = fbEnabled ? 'block' : 'none';
   
-  document.getElementById('settingsFirebaseApiKey').value = localStorage.getItem('MMC_FIREBASE_API_KEY') || '';
-  document.getElementById('settingsFirebaseAuthDomain').value = localStorage.getItem('MMC_FIREBASE_AUTH_DOMAIN') || '';
-  document.getElementById('settingsFirebaseProjectId').value = localStorage.getItem('MMC_FIREBASE_PROJECT_ID') || '';
-  document.getElementById('settingsFirebaseStorageBucket').value = localStorage.getItem('MMC_FIREBASE_STORAGE_BUCKET') || '';
-  document.getElementById('settingsFirebaseSenderId').value = localStorage.getItem('MMC_FIREBASE_SENDER_ID') || '';
-  document.getElementById('settingsFirebaseAppId').value = localStorage.getItem('MMC_FIREBASE_APP_ID') || '';
+  document.getElementById('settingsFirebaseApiKey').value = storage.getItem('MMC_FIREBASE_API_KEY') || '';
+  document.getElementById('settingsFirebaseAuthDomain').value = storage.getItem('MMC_FIREBASE_AUTH_DOMAIN') || '';
+  document.getElementById('settingsFirebaseProjectId').value = storage.getItem('MMC_FIREBASE_PROJECT_ID') || '';
+  document.getElementById('settingsFirebaseStorageBucket').value = storage.getItem('MMC_FIREBASE_STORAGE_BUCKET') || '';
+  document.getElementById('settingsFirebaseSenderId').value = storage.getItem('MMC_FIREBASE_SENDER_ID') || '';
+  document.getElementById('settingsFirebaseAppId').value = storage.getItem('MMC_FIREBASE_APP_ID') || '';
   
   openModal('securitySettingsModal');
 }
@@ -1728,18 +1767,18 @@ function saveSecuritySettings() {
   }
   
   // Save credentials
-  localStorage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
+  storage.setItem('MMC_SECURITY_PASSWORD', MASTER_PASSWORD);
   
   // Save Firebase Config
   const fbEnabled = document.getElementById('settingsFirebaseEnabled').checked;
-  localStorage.setItem('MMC_FIREBASE_ENABLED', fbEnabled ? "true" : "false");
+  storage.setItem('MMC_FIREBASE_ENABLED', fbEnabled ? "true" : "false");
   
-  localStorage.setItem('MMC_FIREBASE_API_KEY', document.getElementById('settingsFirebaseApiKey').value.trim());
-  localStorage.setItem('MMC_FIREBASE_AUTH_DOMAIN', document.getElementById('settingsFirebaseAuthDomain').value.trim());
-  localStorage.setItem('MMC_FIREBASE_PROJECT_ID', document.getElementById('settingsFirebaseProjectId').value.trim());
-  localStorage.setItem('MMC_FIREBASE_STORAGE_BUCKET', document.getElementById('settingsFirebaseStorageBucket').value.trim());
-  localStorage.setItem('MMC_FIREBASE_SENDER_ID', document.getElementById('settingsFirebaseSenderId').value.trim());
-  localStorage.setItem('MMC_FIREBASE_APP_ID', document.getElementById('settingsFirebaseAppId').value.trim());
+  storage.setItem('MMC_FIREBASE_API_KEY', document.getElementById('settingsFirebaseApiKey').value.trim());
+  storage.setItem('MMC_FIREBASE_AUTH_DOMAIN', document.getElementById('settingsFirebaseAuthDomain').value.trim());
+  storage.setItem('MMC_FIREBASE_PROJECT_ID', document.getElementById('settingsFirebaseProjectId').value.trim());
+  storage.setItem('MMC_FIREBASE_STORAGE_BUCKET', document.getElementById('settingsFirebaseStorageBucket').value.trim());
+  storage.setItem('MMC_FIREBASE_SENDER_ID', document.getElementById('settingsFirebaseSenderId').value.trim());
+  storage.setItem('MMC_FIREBASE_APP_ID', document.getElementById('settingsFirebaseAppId').value.trim());
   
   closeModal('securitySettingsModal');
   showToast("Security and cloud settings saved successfully!");
@@ -1760,13 +1799,13 @@ let cloudSyncActive = false;
 let firebaseUnsubscribeListener = null;
 
 function initFirebaseConnection(configChanged = false) {
-  const enabled = localStorage.getItem('MMC_FIREBASE_ENABLED') === "true";
-  const apiKey = localStorage.getItem('MMC_FIREBASE_API_KEY');
-  const authDomain = localStorage.getItem('MMC_FIREBASE_AUTH_DOMAIN');
-  const projectId = localStorage.getItem('MMC_FIREBASE_PROJECT_ID');
-  const storageBucket = localStorage.getItem('MMC_FIREBASE_STORAGE_BUCKET');
-  const messagingSenderId = localStorage.getItem('MMC_FIREBASE_SENDER_ID');
-  const appId = localStorage.getItem('MMC_FIREBASE_APP_ID');
+  const enabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
+  const apiKey = storage.getItem('MMC_FIREBASE_API_KEY');
+  const authDomain = storage.getItem('MMC_FIREBASE_AUTH_DOMAIN');
+  const projectId = storage.getItem('MMC_FIREBASE_PROJECT_ID');
+  const storageBucket = storage.getItem('MMC_FIREBASE_STORAGE_BUCKET');
+  const messagingSenderId = storage.getItem('MMC_FIREBASE_SENDER_ID');
+  const appId = storage.getItem('MMC_FIREBASE_APP_ID');
 
   const badge = document.getElementById('cloudSyncStatusBadge');
 
