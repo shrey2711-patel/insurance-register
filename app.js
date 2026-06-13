@@ -780,20 +780,18 @@ function deleteEntry(idx) {
   }
 }
 
-// Bulk delete controller
 function deleteSelected() {
   const checkboxes = document.querySelectorAll('.row-cb:checked');
   if (checkboxes.length === 0) return;
   
   if (confirm(`Are you absolutely sure you want to delete ${checkboxes.length} selected policy records? This action is permanent!`)) {
-    const indicesToDelete = Array.from(checkboxes).map(cb => Number(cb.dataset.index)).sort((a,b) => b - a);
+    const idsToDelete = Array.from(checkboxes).map(cb => String(cb.dataset.id));
     
     if (cloudSyncActive) {
       showToast("Deleting bulk records from cloud...", false);
       (async () => {
         try {
-          for (const idx of indicesToDelete) {
-            const dbId = DATA[idx].id;
+          for (const dbId of idsToDelete) {
             const docRef = firestoreInstance.collection('policies').doc(dbId);
             const docSnap = await docRef.get();
             if (docSnap.exists) {
@@ -823,23 +821,22 @@ function deleteSelected() {
     const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     
-    let deletedCount = 0;
-    
-    indicesToDelete.forEach(idx => {
-      const dbId = DATA[idx].id;
-      const req = store.delete(dbId);
-      req.onsuccess = function() {
-        DATA.splice(idx, 1);
-        deletedCount++;
-        if (deletedCount === indicesToDelete.length) {
-          saveDatabase(); // redundant fallback
-          document.getElementById('selectAllCheckbox').checked = false;
-          applyFiltersAndStats();
-          showToast(`Wiped ${indicesToDelete.length} records successfully.`);
-          logActivity(`🗑️ Bulk Deleted: ${indicesToDelete.length} records wiped from register ledger`, "err");
-        }
-      };
+    idsToDelete.forEach(dbId => {
+      store.delete(dbId);
     });
+    
+    transaction.oncomplete = function() {
+      DATA = DATA.filter(item => !idsToDelete.includes(String(item.id)));
+      saveDatabase(); // redundant fallback
+      document.getElementById('selectAllCheckbox').checked = false;
+      applyFiltersAndStats();
+      showToast(`Wiped ${idsToDelete.length} records successfully.`);
+      logActivity(`🗑️ Bulk Deleted: ${idsToDelete.length} records wiped from register ledger`, "err");
+    };
+    
+    transaction.onerror = function() {
+      showToast("Failed to delete selected records from database!", true);
+    };
   }
 }
 
@@ -952,7 +949,7 @@ function applyFiltersAndStats() {
     
     // Status Filter Check
     const bucket = getDaysBucket(item.daysLeft);
-    const isSent = sentSet.has(item.originalIdx);
+    const isSent = sentSet.has(item.id);
     
     if (activeStatusFilter === 'all') return true;
     if (activeStatusFilter === 'expired') return bucket === 'expired';
@@ -984,7 +981,7 @@ function renderTable(sentSet) {
   filteredData.forEach((item, index) => {
     const bucket = getDaysBucket(item.daysLeft);
     const label = formatDaysLabel(item.daysLeft);
-    const isSent = sentSet.has(item.originalIdx);
+    const isSent = sentSet.has(item.id);
     
     // Detect data warnings
     let integrityHelp = '';
@@ -998,8 +995,8 @@ function renderTable(sentSet) {
     const waUrl = buildWhatsAppLink(item);
     
     const btnWa = isSent 
-      ? `<a href="${waUrl}" target="_blank" class="btn-wa-action sent" onclick="markAsSent(${item.originalIdx})"><i class="fa-solid fa-circle-check"></i> Resend</a>`
-      : `<a href="${waUrl}" target="_blank" class="btn-wa-action" onclick="markAsSent(${item.originalIdx})"><i class="fa-brands fa-whatsapp"></i> Send</a>`;
+      ? `<a href="${waUrl}" target="_blank" class="btn-wa-action sent" onclick="markAsSent('${item.id}')"><i class="fa-solid fa-circle-check"></i> Resend</a>`
+      : `<a href="${waUrl}" target="_blank" class="btn-wa-action" onclick="markAsSent('${item.id}')"><i class="fa-brands fa-whatsapp"></i> Send</a>`;
       
     // Style provider tag class
     const insClass = item.insurance.toLowerCase().replace(/\s+/g, '');
@@ -1023,9 +1020,9 @@ function renderTable(sentSet) {
     }
 
     const tr = document.createElement('tr');
-    tr.id = `row-${item.originalIdx}`;
+    tr.id = `row-${item.id}`;
     tr.innerHTML = `
-      <td data-label="Select" style="padding-left:16px;"><input type="checkbox" class="custom-cb row-cb" data-index="${item.originalIdx}" onchange="updateSelectedCount()"></td>
+      <td data-label="Select" style="padding-left:16px;"><input type="checkbox" class="custom-cb row-cb" data-id="${item.id}" onchange="updateSelectedCount()"></td>
       <td data-label="#" style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;">${index + 1}</td>
       <td data-label="Client">
         <div class="stack-cell">
@@ -1089,7 +1086,7 @@ function toggleSelectAll(master) {
   const checkboxes = document.querySelectorAll('.row-cb');
   checkboxes.forEach(cb => {
     cb.checked = master.checked;
-    const row = document.getElementById(`row-${cb.dataset.index}`);
+    const row = document.getElementById(`row-${cb.dataset.id}`);
     if (row) {
       if (master.checked) row.classList.add('selected');
       else row.classList.remove('selected');
@@ -1107,7 +1104,7 @@ function updateSelectedCount() {
   
   // highlight selected rows
   document.querySelectorAll('.row-cb').forEach(cb => {
-    const row = document.getElementById(`row-${cb.dataset.index}`);
+    const row = document.getElementById(`row-${cb.dataset.id}`);
     if (row) {
       if (cb.checked) row.classList.add('selected');
       else row.classList.remove('selected');
@@ -1144,12 +1141,15 @@ function buildWhatsAppLink(item) {
   return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
 }
 
-function markAsSent(originalIdx) {
+function markAsSent(id) {
   const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
-  sentSet.add(originalIdx);
+  sentSet.add(id);
   localStorage.setItem('waSent', JSON.stringify([...sentSet]));
   
-  logActivity(`💬 WhatsApp opened for client: ${DATA[originalIdx].name}`, "info");
+  const item = DATA.find(x => String(x.id) === String(id));
+  if (item) {
+    logActivity(`💬 WhatsApp opened for client: ${item.name}`, "info");
+  }
   
   // Quick timeout to update UI state
   setTimeout(() => applyFiltersAndStats(), 1000);
@@ -1160,29 +1160,30 @@ function triggerBulkSend() {
   const checkboxes = document.querySelectorAll('.row-cb:checked');
   if (checkboxes.length === 0) return;
   
-  const targetIndices = Array.from(checkboxes).map(cb => Number(cb.dataset.index));
+  const targetIds = Array.from(checkboxes).map(cb => String(cb.dataset.id));
   
-  if (confirm(`You have queued ${targetIndices.length} WhatsApp reminders. Because of browser security, we will open them in separate tabs. Please enable popups! Proceed?`)) {
+  if (confirm(`You have queued ${targetIds.length} WhatsApp reminders. Because of browser security, we will open them in separate tabs. Please enable popups! Proceed?`)) {
     let index = 0;
     
     function sendNext() {
-      if (index >= targetIndices.length) {
-        showToast(`Dispatched all ${targetIndices.length} reminders!`);
-        logActivity(`🚀 Bulk WhatsApp: Dispatched all ${targetIndices.length} reminders!`, "info");
+      if (index >= targetIds.length) {
+        showToast(`Dispatched all ${targetIds.length} reminders!`);
+        logActivity(`🚀 Bulk WhatsApp: Dispatched all ${targetIds.length} reminders!`, "info");
         document.getElementById('selectAllCheckbox').checked = false;
         applyFiltersAndStats();
         return;
       }
       
-      const origIdx = targetIndices[index];
-      const item = DATA[origIdx];
-      const link = buildWhatsAppLink(item);
-      
-      window.open(link, '_blank');
-      
-      const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
-      sentSet.add(origIdx);
-      localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+      const targetId = targetIds[index];
+      const item = DATA.find(x => String(x.id) === targetId);
+      if (item) {
+        const link = buildWhatsAppLink(item);
+        window.open(link, '_blank');
+        
+        const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
+        sentSet.add(targetId);
+        localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+      }
       
       index++;
       setTimeout(sendNext, 2000); // 2 second delay to protect popup blockers
@@ -1191,149 +1192,7 @@ function triggerBulkSend() {
   }
 }
 
-// ==============================================
-// EXCEL IMPORT & PARSING ENGINE
-// ==============================================
-function handleExcelFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  parseExcelFile(file);
-}
 
-function parseExcelFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rawJson = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      
-      if (rawJson.length === 0) {
-        showToast("Excel sheet has no rows of data!", true);
-        return;
-      }
-
-      // Read columns and prompt mapper
-      const mode = document.getElementById('importMode').value;
-      const importedRecords = [];
-
-      rawJson.forEach(row => {
-        const item = mapExcelRow(row);
-        if (item.name && item.phone) {
-          importedRecords.push(item);
-        }
-      });
-
-      if (importedRecords.length === 0) {
-        showToast("Could not find rows with valid client Name and Phone columns!", true);
-        return;
-      }
-
-      if (mode === 'overwrite') {
-        DATA = [...importedRecords];
-      } else {
-        // Append mode
-        DATA = [...DATA, ...importedRecords];
-      }
-
-      saveDatabase();
-      closeModal('importModal');
-      applyFiltersAndStats();
-      showToast(`Successfully imported ${importedRecords.length} policies from Excel!`);
-      logActivity(`📥 Imported file: "${file.name}" with ${importedRecords.length} active rows`, "info");
-      
-    } catch(err) {
-      showToast("Error parsing Excel file sheet! Check format.", true);
-      logActivity(`❌ Import error: ${err.message}`, "err");
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function mapExcelRow(row) {
-  const keys = Object.keys(row);
-  const findVal = (possibleHeaders) => {
-    const matchedKey = keys.find(k => {
-      const cleanKey = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      return possibleHeaders.some(ph => cleanKey === ph);
-    });
-    return matchedKey ? row[matchedKey] : '';
-  };
-
-  const name = findVal(['name', 'clientname', 'customername', 'client']);
-  const vehicle = findVal(['vehicle', 'vehical', 'model', 'car', 'bike']);
-  const plate = findVal(['numberplate', 'plate', 'plateno', 'vehicleno', 'regno', 'numberplate']);
-  const insurance = findVal(['insurance', 'inscompany', 'provider', 'company']);
-  
-  let startDateRaw = findVal(['date', 'startdate', 'issuedate']);
-  let endDateRaw = findVal(['enddate', 'expirydate', 'expdate', 'duedate']);
-  
-  const policyNo = findVal(['policyno', 'policy', 'policynumber']);
-  const amount = findVal(['amount', 'premium', 'price', 'cost']);
-  const phone = findVal(['contactno', 'phone', 'mobile', 'contact', 'phoneno']);
-  const notes = findVal(['notes', 'remarks', 'remark', 'note', 'comment']);
-
-  const parseDate = (d) => {
-    if (!d) return '';
-    if (d instanceof Date) return d.toISOString().split('T')[0];
-    if (typeof d === 'number') {
-      const date = new Date((d - 25569) * 86400 * 1000);
-      return date.toISOString().split('T')[0];
-    }
-    const cleanStr = String(d).trim();
-    if (!cleanStr) return '';
-    
-    // Try to parse DD-MM-YYYY
-    const dmyMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-    if (dmyMatch) {
-      const day = dmyMatch[1].padStart(2, '0');
-      const month = dmyMatch[2].padStart(2, '0');
-      const year = dmyMatch[3];
-      return `${year}-${month}-${day}`;
-    }
-    
-    const parsed = new Date(cleanStr);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split('T')[0];
-    }
-    return cleanStr;
-  };
-
-  return {
-    id: generateUniqueId(),
-    name: String(name).trim(),
-    vehicle: String(vehicle).trim(),
-    plate: formatPlateNumber(plate),
-    insurance: String(insurance).trim(),
-    start_date: parseDate(startDateRaw),
-    end_date: parseDate(endDateRaw),
-    policy_no: String(policyNo).trim(),
-    amount: amount ? Number(amount) : '',
-    phone: cleanAndFormatPhone(phone),
-    notes: String(notes).trim()
-  };
-}
-
-// Drag & drop handlers
-const dropZone = document.getElementById('excelDropZone');
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) parseExcelFile(file);
-});
-dropZone.addEventListener('click', () => {
-  document.getElementById('excelFileInput').click();
-});
 
 // ==============================================
 // EXPORT & LEDGER BACKUP

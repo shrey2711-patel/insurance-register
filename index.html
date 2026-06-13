@@ -1308,7 +1308,6 @@
     <div class="nav-group">
       <span class="nav-title">Register Tools</span>
       <button class="nav-btn" onclick="openAddModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-plus" style="color:var(--accent);"></i> New Daily Entry</span></span></button>
-      <button class="nav-btn" onclick="openImportModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-import" style="color:var(--blue);"></i> Import Excel File</span></span></button>
       <button class="nav-btn" onclick="exportExcel()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-excel" style="color:var(--accent);"></i> Export Excel Sheet</span></span></button>
       <button class="nav-btn" onclick="openTemplateModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-brands fa-whatsapp" style="color:var(--accent);"></i> Edit Message Template</span></span></button>
       <button class="nav-btn" onclick="openSecuritySettingsModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-cloud" style="color:var(--amber);"></i> Firebase Cloud Sync Settings</span></span></button>
@@ -1648,36 +1647,6 @@
   </div>
 </div>
 
-<!-- 3. DRAG & DROP EXCEL IMPORT MODAL -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2><i class="fa-solid fa-file-import" style="color:var(--blue);"></i> Import Excel File (.xlsx / .csv)</h2>
-      <button class="modal-close" onclick="closeModal('importModal')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="drop-zone" id="excelDropZone">
-        <i class="fa-regular fa-file-excel"></i>
-        <span>Drag & drop your Excel sheet here or click to browse</span>
-        <p>Supports .xlsx, .xls, and .csv formats</p>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleExcelFileSelect(this)">
-      </div>
-      <div class="form-group" style="margin-top: 10px;">
-        <label>Import Mode Option</label>
-        <select class="select-pill" id="importMode" style="width: 100%;">
-          <option value="merge" selected>Merge & Add (Append new rows to your current list)</option>
-          <option value="overwrite">Complete Overwrite (Wipe current list & replace with file)</option>
-        </select>
-      </div>
-      <div id="importMappingHelp" style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-        <p><i class="fa-solid fa-circle-info"></i> The engine will automatically try to match Excel column headers: <strong>Name</strong>, <strong>Vehical/Model</strong>, <strong>Plate No.</strong>, <strong>Insurance Company</strong>, <strong>End Date</strong>, and <strong>Contact No</strong>.</p>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('importModal')">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- 4. EDIT MESSAGE TEMPLATE MODAL -->
 <div class="modal-overlay" id="templateModal">
@@ -2523,12 +2492,7 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ==============================================
-// CRUD CONTROLLERS
-// ==============================================
-function openImportModal() {
-  openModal('importModal');
-}
+
 
 function openAddModal() {
   // Clear inputs
@@ -2790,42 +2754,44 @@ function deleteSelected() {
   if (checkboxes.length === 0) return;
   
   if (confirm(`Are you absolutely sure you want to delete ${checkboxes.length} selected policy records? This action is permanent!`)) {
-    const indicesToDelete = Array.from(checkboxes).map(cb => Number(cb.dataset.index)).sort((a,b) => b - a);
+    const idsToDelete = Array.from(checkboxes).map(cb => String(cb.dataset.id));
     
     const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     
-    let deletedCount = 0;
+    const itemsToDelete = DATA.filter(item => idsToDelete.includes(String(item.id)));
     
-    indicesToDelete.forEach(idx => {
-      const itemToDelete = DATA[idx];
-      const dbId = itemToDelete.id;
-      const req = store.delete(dbId);
-      req.onsuccess = function() {
-        // Cloud Sync delete
-        const isCloudEnabled = localStorage.getItem('MMC_FIREBASE_ENABLED') === "true";
-        if (isCloudEnabled && firebaseInitialized) {
-          dbCloud.collection("policies").doc(String(dbId)).delete().catch(()=>{});
-          if (storageCloud) {
-            storageCloud.ref().child(`policies/${dbId}/policy_doc`).delete().catch(()=>{});
-            const docs = Array.isArray(itemToDelete.kyc_docs) ? itemToDelete.kyc_docs : [];
-            docs.forEach((doc, dIdx) => {
-              storageCloud.ref().child(`policies/${dbId}/kyc_doc_${dIdx}`).delete().catch(()=>{});
-            });
-          }
+    itemsToDelete.forEach(item => {
+      const dbId = item.id;
+      store.delete(dbId);
+      
+      // Cloud Sync delete
+      const isCloudEnabled = localStorage.getItem('MMC_FIREBASE_ENABLED') === "true";
+      if (isCloudEnabled && firebaseInitialized) {
+        dbCloud.collection("policies").doc(String(dbId)).delete().catch(()=>{});
+        if (storageCloud) {
+          storageCloud.ref().child(`policies/${dbId}/policy_doc`).delete().catch(()=>{});
+          const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : [];
+          docs.forEach((doc, dIdx) => {
+            storageCloud.ref().child(`policies/${dbId}/kyc_doc_${dIdx}`).delete().catch(()=>{});
+          });
         }
-        
-        DATA.splice(idx, 1);
-        deletedCount++;
-        if (deletedCount === indicesToDelete.length) {
-          saveDatabase(); // redundant fallback
-          document.getElementById('selectAllCheckbox').checked = false;
-          applyFiltersAndStats();
-          showToast(`Wiped ${indicesToDelete.length} records successfully.`);
-          logActivity(`🗑️ Bulk Deleted: ${indicesToDelete.length} records wiped from register ledger`, "err");
-        }
-      };
+      }
     });
+    
+    transaction.oncomplete = function() {
+      // Safely filter local DATA array after transaction finishes successfully
+      DATA = DATA.filter(item => !idsToDelete.includes(String(item.id)));
+      saveDatabase(); // redundant fallback
+      document.getElementById('selectAllCheckbox').checked = false;
+      applyFiltersAndStats();
+      showToast(`Wiped ${itemsToDelete.length} records successfully.`);
+      logActivity(`🗑️ Bulk Deleted: ${itemsToDelete.length} records wiped from register ledger`, "err");
+    };
+    
+    transaction.onerror = function() {
+      showToast("Failed to delete selected records from database!", true);
+    };
   }
 }
 
@@ -3224,7 +3190,7 @@ function applyFiltersAndStats() {
     
     // Status Filter Check
     const bucket = getDaysBucket(item.daysLeft);
-    const isSent = sentSet.has(item.originalIdx);
+    const isSent = sentSet.has(item.id);
     
     if (activeStatusFilter === 'all') return true;
     if (activeStatusFilter === 'expired') return bucket === 'expired';
@@ -3261,7 +3227,7 @@ function renderTable(sentSet) {
   filteredData.forEach((item, index) => {
     const bucket = getDaysBucket(item.daysLeft);
     const label = formatDaysLabel(item.daysLeft);
-    const isSent = sentSet.has(item.originalIdx);
+    const isSent = sentSet.has(item.id);
     
     // Detect data warnings
     let integrityHelp = '';
@@ -3275,8 +3241,8 @@ function renderTable(sentSet) {
     const waUrl = buildWhatsAppLink(item);
     
     const btnWa = isSent 
-      ? `<a href="${waUrl}" target="_blank" class="btn-wa-action sent" onclick="markAsSent(${item.originalIdx})"><i class="fa-solid fa-circle-check"></i> Resend</a>`
-      : `<a href="${waUrl}" target="_blank" class="btn-wa-action" onclick="markAsSent(${item.originalIdx})"><i class="fa-brands fa-whatsapp"></i> Send</a>`;
+      ? `<a href="${waUrl}" target="_blank" class="btn-wa-action sent" onclick="markAsSent('${item.id}')"><i class="fa-solid fa-circle-check"></i> Resend</a>`
+      : `<a href="${waUrl}" target="_blank" class="btn-wa-action" onclick="markAsSent('${item.id}')"><i class="fa-brands fa-whatsapp"></i> Send</a>`;
       
     // Style provider tag class
     const insClass = item.insurance.toLowerCase().replace(/\s+/g, '');
@@ -3316,9 +3282,9 @@ function renderTable(sentSet) {
     }
 
     const tr = document.createElement('tr');
-    tr.id = `row-${item.originalIdx}`;
+    tr.id = `row-${item.id}`;
     tr.innerHTML = `
-      <td style="padding-left:16px;"><input type="checkbox" class="custom-cb row-cb" data-index="${item.originalIdx}" onchange="updateSelectedCount()"></td>
+      <td style="padding-left:16px;"><input type="checkbox" class="custom-cb row-cb" data-id="${item.id}" onchange="updateSelectedCount()"></td>
       <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;">${index + 1}</td>
       <td>
         <div class="stack-cell">
@@ -3378,7 +3344,7 @@ function toggleSelectAll(master) {
   const checkboxes = document.querySelectorAll('.row-cb');
   checkboxes.forEach(cb => {
     cb.checked = master.checked;
-    const row = document.getElementById(`row-${cb.dataset.index}`);
+    const row = document.getElementById(`row-${cb.dataset.id}`);
     if (row) {
       if (master.checked) row.classList.add('selected');
       else row.classList.remove('selected');
@@ -3396,7 +3362,7 @@ function updateSelectedCount() {
   
   // highlight selected rows
   document.querySelectorAll('.row-cb').forEach(cb => {
-    const row = document.getElementById(`row-${cb.dataset.index}`);
+    const row = document.getElementById(`row-${cb.dataset.id}`);
     if (row) {
       if (cb.checked) row.classList.add('selected');
       else row.classList.remove('selected');
@@ -3433,12 +3399,15 @@ function buildWhatsAppLink(item) {
   return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
 }
 
-function markAsSent(originalIdx) {
+function markAsSent(id) {
   const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
-  sentSet.add(originalIdx);
+  sentSet.add(id);
   localStorage.setItem('waSent', JSON.stringify([...sentSet]));
   
-  logActivity(`💬 WhatsApp opened for client: ${DATA[originalIdx].name}`, "info");
+  const item = DATA.find(x => String(x.id) === String(id));
+  if (item) {
+    logActivity(`💬 WhatsApp opened for client: ${item.name}`, "info");
+  }
   
   // Quick timeout to update UI state
   setTimeout(() => applyFiltersAndStats(), 1000);
@@ -3449,29 +3418,30 @@ function triggerBulkSend() {
   const checkboxes = document.querySelectorAll('.row-cb:checked');
   if (checkboxes.length === 0) return;
   
-  const targetIndices = Array.from(checkboxes).map(cb => Number(cb.dataset.index));
+  const targetIds = Array.from(checkboxes).map(cb => String(cb.dataset.id));
   
-  if (confirm(`You have queued ${targetIndices.length} WhatsApp reminders. Because of browser security, we will open them in separate tabs. Please enable popups! Proceed?`)) {
+  if (confirm(`You have queued ${targetIds.length} WhatsApp reminders. Because of browser security, we will open them in separate tabs. Please enable popups! Proceed?`)) {
     let index = 0;
     
     function sendNext() {
-      if (index >= targetIndices.length) {
-        showToast(`Dispatched all ${targetIndices.length} reminders!`);
-        logActivity(`🚀 Bulk WhatsApp: Dispatched all ${targetIndices.length} reminders!`, "info");
+      if (index >= targetIds.length) {
+        showToast(`Dispatched all ${targetIds.length} reminders!`);
+        logActivity(`🚀 Bulk WhatsApp: Dispatched all ${targetIds.length} reminders!`, "info");
         document.getElementById('selectAllCheckbox').checked = false;
         applyFiltersAndStats();
         return;
       }
       
-      const origIdx = targetIndices[index];
-      const item = DATA[origIdx];
-      const link = buildWhatsAppLink(item);
-      
-      window.open(link, '_blank');
-      
-      const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
-      sentSet.add(origIdx);
-      localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+      const targetId = targetIds[index];
+      const item = DATA.find(x => String(x.id) === targetId);
+      if (item) {
+        const link = buildWhatsAppLink(item);
+        window.open(link, '_blank');
+        
+        const sentSet = new Set(JSON.parse(localStorage.getItem('waSent') || '[]'));
+        sentSet.add(targetId);
+        localStorage.setItem('waSent', JSON.stringify([...sentSet]));
+      }
       
       index++;
       setTimeout(sendNext, 2000); // 2 second delay to protect popup blockers
@@ -3480,163 +3450,6 @@ function triggerBulkSend() {
   }
 }
 
-// ==============================================
-// EXCEL IMPORT & PARSING ENGINE
-// ==============================================
-function handleExcelFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  parseExcelFile(file);
-}
-
-function parseExcelFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rawJson = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      
-      if (rawJson.length === 0) {
-        showToast("Excel sheet has no rows of data!", true);
-        return;
-      }
-
-      // Read columns and prompt mapper
-      const mode = document.getElementById('importMode').value;
-      const importedRecords = [];
-
-      rawJson.forEach(row => {
-        const item = mapExcelRow(row);
-        if (item.name && item.phone) {
-          importedRecords.push(item);
-        }
-      });
-
-      if (importedRecords.length === 0) {
-        showToast("Could not find rows with valid client Name and Phone columns!", true);
-        return;
-      }
-
-      if (mode === 'overwrite') {
-        (async () => {
-          const isCloudEnabled = localStorage.getItem('MMC_FIREBASE_ENABLED') === "true";
-          if (isCloudEnabled && firebaseInitialized) {
-            showToast("☁️ Clearing Cloud database for overwrite...");
-            await clearCloudDatabase();
-          }
-          DATA = [...importedRecords];
-          saveAllToIndexedDB(true, true);
-          closeModal('importModal');
-          applyFiltersAndStats();
-          showToast(`Successfully imported ${importedRecords.length} policies from Excel!`);
-          logActivity(`📥 Imported file: "${file.name}" with ${importedRecords.length} active rows`, "info");
-        })();
-      } else {
-        // Append mode
-        importedRecords.forEach(item => {
-          item._isNew = true;
-        });
-        DATA = [...DATA, ...importedRecords];
-        saveAllToIndexedDB(true, false);
-        closeModal('importModal');
-        applyFiltersAndStats();
-        showToast(`Successfully imported ${importedRecords.length} policies from Excel!`);
-        logActivity(`📥 Imported file: "${file.name}" with ${importedRecords.length} active rows`, "info");
-      }
-      
-    } catch(err) {
-      showToast("Error parsing Excel file sheet! Check format.", true);
-      logActivity(`❌ Import error: ${err.message}`, "err");
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function mapExcelRow(row) {
-  const keys = Object.keys(row);
-  const findVal = (possibleHeaders) => {
-    const matchedKey = keys.find(k => {
-      const cleanKey = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      return possibleHeaders.some(ph => cleanKey === ph);
-    });
-    return matchedKey ? row[matchedKey] : '';
-  };
-
-  const name = findVal(['name', 'clientname', 'customername', 'client']);
-  const vehicle = findVal(['vehicle', 'vehical', 'model', 'car', 'bike']);
-  const plate = findVal(['numberplate', 'plate', 'plateno', 'vehicleno', 'regno', 'numberplate']);
-  const insurance = findVal(['insurance', 'inscompany', 'provider', 'company']);
-  
-  let startDateRaw = findVal(['date', 'startdate', 'issuedate']);
-  let endDateRaw = findVal(['enddate', 'expirydate', 'expdate', 'duedate']);
-  
-  const policyNo = findVal(['policyno', 'policy', 'policynumber']);
-  const amount = findVal(['amount', 'premium', 'price', 'cost', 'premiumamount']);
-  const phone = findVal(['contactno', 'phone', 'mobile', 'contact', 'phoneno']);
-  const notes = findVal(['notes', 'remarks', 'remark', 'note', 'comment']);
-
-  const parseDate = (d) => {
-    if (!d) return '';
-    if (d instanceof Date) return d.toISOString().split('T')[0];
-    if (typeof d === 'number') {
-      const date = new Date((d - 25569) * 86400 * 1000);
-      return date.toISOString().split('T')[0];
-    }
-    const cleanStr = String(d).trim();
-    if (!cleanStr) return '';
-    
-    // Try to parse DD-MM-YYYY
-    const dmyMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-    if (dmyMatch) {
-      const day = dmyMatch[1].padStart(2, '0');
-      const month = dmyMatch[2].padStart(2, '0');
-      const year = dmyMatch[3];
-      return `${year}-${month}-${day}`;
-    }
-    
-    const parsed = new Date(cleanStr);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split('T')[0];
-    }
-    return cleanStr;
-  };
-
-  return {
-    id: generateUniqueId(),
-    name: String(name).trim(),
-    vehicle: String(vehicle).trim(),
-    plate: formatPlateNumber(plate),
-    insurance: String(insurance).trim(),
-    start_date: parseDate(startDateRaw),
-    end_date: parseDate(endDateRaw),
-    policy_no: String(policyNo).trim(),
-    amount: amount ? Number(amount) : '',
-    phone: cleanAndFormatPhone(phone),
-    notes: String(notes).trim()
-  };
-}
-
-// Drag & drop handlers
-const dropZone = document.getElementById('excelDropZone');
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) parseExcelFile(file);
-});
-dropZone.addEventListener('click', () => {
-  document.getElementById('excelFileInput').click();
-});
 
 // ==============================================
 // EXPORT & LEDGER BACKUP
@@ -3947,7 +3760,7 @@ function saveSecuritySettings() {
 // GOOGLE FIREBASE CLOUD SYNC CONTROLLER
 // ==============================================
 const DEMO_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCszSmi11-Nbj76U9dJEYDezbJayK2btko",
+  apiKey: "AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko",
   authDomain: "midas-money-care-insurance-reg.firebaseapp.com",
   projectId: "midas-money-care-insurance-reg",
   storageBucket: "midas-money-care-insurance-reg.firebasestorage.app",
@@ -4376,7 +4189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fbEnabled = localStorage.getItem('MMC_FIREBASE_ENABLED');
   if (fbEnabled === null || fbEnabled === undefined || !localStorage.getItem('MMC_FIREBASE_PROJECT_ID')) {
     localStorage.setItem('MMC_FIREBASE_ENABLED', 'true'); // Auto-enable Cloud Sync!
-    localStorage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCszSmi11-Nbj76U9dJEYDezbJayK2btko');
+    localStorage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko');
     localStorage.setItem('MMC_FIREBASE_PROJECT_ID', 'midas-money-care-insurance-reg');
     localStorage.setItem('MMC_FIREBASE_AUTH_DOMAIN', 'midas-money-care-insurance-reg.firebaseapp.com');
     localStorage.setItem('MMC_FIREBASE_STORAGE_BUCKET', 'midas-money-care-insurance-reg.firebasestorage.app');
@@ -4384,9 +4197,10 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('MMC_FIREBASE_APP_ID', '1:709834917216:web:147b98578fcf3b33c34a05');
   }
   
-  // Force upgrade/correction of old API key with capital 'M' in local storage
-  if (localStorage.getItem('MMC_FIREBASE_API_KEY') === 'AIzaSyCszSMi11-Nbj76U9dJEYDezbJayK2btko') {
-    localStorage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCszSmi11-Nbj76U9dJEYDezbJayK2btko');
+  // Force upgrade/correction of old/incorrect API keys in local storage
+  const currentApiKey = localStorage.getItem('MMC_FIREBASE_API_KEY');
+  if (currentApiKey === 'AIzaSyCszSMi11-Nbj76U9dJEYDezbJayK2btko' || currentApiKey === 'AIzaSyCszSMi11-Nbj76U9dJEYDezbJayK2btko') {
+    localStorage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko');
   }
   
   setTimeout(() => {
