@@ -1702,40 +1702,10 @@
             Enable Cloud Sync
           </label>
         </div>
-        <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Sync policies, PDFs, and KYC documents in real time across multiple computers or mobile phones for free! If you leave these credentials blank while active, we will automatically set up a fast public demo database for you.</p>
+        <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Sync policies, PDFs, and KYC documents in real time across multiple computers or mobile phones securely.</p>
         
-        <div id="firebaseConfigFields" style="display:none;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>API Key</label>
-              <input type="password" class="form-input" id="settingsFirebaseApiKey" placeholder="e.g. AIzaSy...">
-            </div>
-            <div class="form-group">
-              <label>Project ID</label>
-              <input type="text" class="form-input" id="settingsFirebaseProjectId" placeholder="e.g. midasmoneycare">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:10px;">
-            <div class="form-group">
-              <label>Auth Domain</label>
-              <input type="text" class="form-input" id="settingsFirebaseAuthDomain" placeholder="e.g. midasmoneycare.firebaseapp.com">
-            </div>
-            <div class="form-group">
-              <label>Storage Bucket</label>
-              <input type="text" class="form-input" id="settingsFirebaseStorageBucket" placeholder="e.g. midasmoneycare.appspot.com">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:10px;">
-            <div class="form-group">
-              <label>Messaging Sender ID</label>
-              <input type="text" class="form-input" id="settingsFirebaseSenderId" placeholder="e.g. 123456789">
-            </div>
-            <div class="form-group">
-              <label>App ID</label>
-              <input type="text" class="form-input" id="settingsFirebaseAppId" placeholder="e.g. 1:123:web:abc">
-            </div>
-          </div>
-          <div style="margin-top:12px; display:flex; gap:10px;">
+        <div id="firebaseConfigFields" style="display:none; margin-top:12px;">
+          <div style="display:flex; gap:10px;">
             <button type="button" class="btn btn-secondary" onclick="testFirebaseCloudConnection()" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--amber); color:var(--amber); background:rgba(217,119,6,0.05);"><i class="fa-solid fa-circle-nodes"></i> Test Connection</button>
             <button type="button" class="btn btn-secondary" onclick="syncLocalToCloud()" id="btnSyncLocalToCloud" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--purple); color:var(--purple); background:rgba(124,58,237,0.05);"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Local Data</button>
           </div>
@@ -3751,13 +3721,6 @@ function openSecuritySettingsModal() {
   document.getElementById('settingsFirebaseEnabled').checked = fbEnabled;
   toggleFirebaseInputs(fbEnabled);
   
-  document.getElementById('settingsFirebaseApiKey').value = storage.getItem('MMC_FIREBASE_API_KEY') || '';
-  document.getElementById('settingsFirebaseProjectId').value = storage.getItem('MMC_FIREBASE_PROJECT_ID') || '';
-  document.getElementById('settingsFirebaseAuthDomain').value = storage.getItem('MMC_FIREBASE_AUTH_DOMAIN') || '';
-  document.getElementById('settingsFirebaseStorageBucket').value = storage.getItem('MMC_FIREBASE_STORAGE_BUCKET') || '';
-  document.getElementById('settingsFirebaseSenderId').value = storage.getItem('MMC_FIREBASE_SENDER_ID') || '';
-  document.getElementById('settingsFirebaseAppId').value = storage.getItem('MMC_FIREBASE_APP_ID') || '';
-  
   // Load Google Drive Config
   const gdEnabled = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
   document.getElementById('settingsGoogleDriveEnabled').checked = gdEnabled;
@@ -3773,12 +3736,6 @@ function saveSecuritySettings() {
   // Save Firebase configuration
   const fbEnabled = document.getElementById('settingsFirebaseEnabled').checked;
   storage.setItem('MMC_FIREBASE_ENABLED', fbEnabled ? "true" : "false");
-  storage.setItem('MMC_FIREBASE_API_KEY', document.getElementById('settingsFirebaseApiKey').value.trim());
-  storage.setItem('MMC_FIREBASE_PROJECT_ID', document.getElementById('settingsFirebaseProjectId').value.trim());
-  storage.setItem('MMC_FIREBASE_AUTH_DOMAIN', document.getElementById('settingsFirebaseAuthDomain').value.trim());
-  storage.setItem('MMC_FIREBASE_STORAGE_BUCKET', document.getElementById('settingsFirebaseStorageBucket').value.trim());
-  storage.setItem('MMC_FIREBASE_SENDER_ID', document.getElementById('settingsFirebaseSenderId').value.trim());
-  storage.setItem('MMC_FIREBASE_APP_ID', document.getElementById('settingsFirebaseAppId').value.trim());
   
   // Save Google Drive configuration
   const gdEnabled = document.getElementById('settingsGoogleDriveEnabled').checked;
@@ -3799,17 +3756,6 @@ function saveSecuritySettings() {
 // ==============================================
 // GOOGLE FIREBASE CLOUD SYNC CONTROLLER
 // ==============================================
-const DEMO_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko",
-  authDomain: "midas-money-care-insurance-reg.firebaseapp.com",
-  databaseURL: "https://midas-money-care-insurance-reg-default-rtdb.firebaseio.com",
-  projectId: "midas-money-care-insurance-reg",
-  storageBucket: "midas-money-care-insurance-reg.firebasestorage.app",
-  messagingSenderId: "709834917216",
-  appId: "1:709834917216:web:147b98578fcf3b33c34a05",
-  measurementId: "G-YYJWZN2L19"
-};
-
 let firebaseInitialized = false;
 let dbCloud = null;
 let storageCloud = null;
@@ -3818,20 +3764,9 @@ function initFirebase() {
   const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   if (!isCloudEnabled) return false;
   
-  const apiKey = storage.getItem('MMC_FIREBASE_API_KEY') || DEMO_FIREBASE_CONFIG.apiKey;
-  const projectId = storage.getItem('MMC_FIREBASE_PROJECT_ID') || DEMO_FIREBASE_CONFIG.projectId;
-  const authDomain = storage.getItem('MMC_FIREBASE_AUTH_DOMAIN') || DEMO_FIREBASE_CONFIG.authDomain;
-  const databaseURL = storage.getItem('MMC_FIREBASE_DATABASE_URL') || DEMO_FIREBASE_CONFIG.databaseURL;
-  const storageBucket = storage.getItem('MMC_FIREBASE_STORAGE_BUCKET') || DEMO_FIREBASE_CONFIG.storageBucket;
-  const messagingSenderId = storage.getItem('MMC_FIREBASE_SENDER_ID') || DEMO_FIREBASE_CONFIG.messagingSenderId;
-  const appId = storage.getItem('MMC_FIREBASE_APP_ID') || DEMO_FIREBASE_CONFIG.appId;
-  const measurementId = storage.getItem('MMC_FIREBASE_MEASUREMENT_ID') || DEMO_FIREBASE_CONFIG.measurementId;
-  
-  const config = { apiKey, authDomain, databaseURL, projectId, storageBucket, messagingSenderId, appId, measurementId };
-  
   try {
     if (firebase.apps.length === 0) {
-      firebase.initializeApp(config);
+      firebase.initializeApp(firebaseConfig);
     }
     dbCloud = firebase.firestore();
     storageCloud = firebase.storage();
@@ -3865,19 +3800,11 @@ function toggleGoogleDriveInputs(enabled) {
 }
 
 async function testFirebaseCloudConnection() {
-  const apiKey = document.getElementById('settingsFirebaseApiKey').value.trim() || DEMO_FIREBASE_CONFIG.apiKey;
-  const projectId = document.getElementById('settingsFirebaseProjectId').value.trim() || DEMO_FIREBASE_CONFIG.projectId;
-  const authDomain = document.getElementById('settingsFirebaseAuthDomain').value.trim() || DEMO_FIREBASE_CONFIG.authDomain;
-  const storageBucket = document.getElementById('settingsFirebaseStorageBucket').value.trim() || DEMO_FIREBASE_CONFIG.storageBucket;
-  const messagingSenderId = document.getElementById('settingsFirebaseSenderId').value.trim() || DEMO_FIREBASE_CONFIG.messagingSenderId;
-  const appId = document.getElementById('settingsFirebaseAppId').value.trim() || DEMO_FIREBASE_CONFIG.appId;
-  
-  const testConfig = { apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId };
   showToast("Testing Cloud Connection...");
   
   try {
     const testAppName = "MMC_TEST_APP_" + Date.now();
-    const testApp = firebase.initializeApp(testConfig, testAppName);
+    const testApp = firebase.initializeApp(firebaseConfig, testAppName);
     const testDb = testApp.firestore();
     
     const testDocRef = testDb.collection("_connection_test").doc("ping");
@@ -3889,7 +3816,7 @@ async function testFirebaseCloudConnection() {
     logActivity("☁️ Firebase test connection ping successful.", "info");
   } catch(e) {
     console.error("Firebase Test Connection Error:", e);
-    showToast("❌ Connection test failed! Please double check your keys.", true);
+    showToast("❌ Connection test failed! Please double check your configuration in code.", true);
   }
 }
 
@@ -4126,24 +4053,15 @@ async function syncLocalToCloud() {
     return;
   }
   
-  const apiKey = document.getElementById('settingsFirebaseApiKey').value.trim() || DEMO_FIREBASE_CONFIG.apiKey;
-  const projectId = document.getElementById('settingsFirebaseProjectId').value.trim() || DEMO_FIREBASE_CONFIG.projectId;
-  const authDomain = document.getElementById('settingsFirebaseAuthDomain').value.trim() || DEMO_FIREBASE_CONFIG.authDomain;
-  const storageBucket = document.getElementById('settingsFirebaseStorageBucket').value.trim() || DEMO_FIREBASE_CONFIG.storageBucket;
-  const messagingSenderId = document.getElementById('settingsFirebaseSenderId').value.trim() || DEMO_FIREBASE_CONFIG.messagingSenderId;
-  const appId = document.getElementById('settingsFirebaseAppId').value.trim() || DEMO_FIREBASE_CONFIG.appId;
-  
-  const config = { apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId };
-  
   try {
     if (firebase.apps.length === 0 || !firebaseInitialized) {
-      firebase.initializeApp(config);
+      firebase.initializeApp(firebaseConfig);
       dbCloud = firebase.firestore();
       storageCloud = firebase.storage();
       firebaseInitialized = true;
     }
   } catch(e) {
-    showToast("❌ Could not connect to Cloud. Save credentials and try again.", true);
+    showToast("❌ Could not connect to Cloud. Check configuration in code and try again.", true);
     return;
   }
   
@@ -4231,22 +4149,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Pre-load and enable private Firebase Cloud Sync silently on first run or if never initialized
   const fbEnabled = storage.getItem('MMC_FIREBASE_ENABLED');
-  if (fbEnabled === null || fbEnabled === undefined || !storage.getItem('MMC_FIREBASE_PROJECT_ID')) {
+  if (fbEnabled === null || fbEnabled === undefined) {
     storage.setItem('MMC_FIREBASE_ENABLED', 'true'); // Auto-enable Cloud Sync!
-    storage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko');
-    storage.setItem('MMC_FIREBASE_PROJECT_ID', 'midas-money-care-insurance-reg');
-    storage.setItem('MMC_FIREBASE_AUTH_DOMAIN', 'midas-money-care-insurance-reg.firebaseapp.com');
-    storage.setItem('MMC_FIREBASE_DATABASE_URL', 'https://midas-money-care-insurance-reg-default-rtdb.firebaseio.com');
-    storage.setItem('MMC_FIREBASE_STORAGE_BUCKET', 'midas-money-care-insurance-reg.firebasestorage.app');
-    storage.setItem('MMC_FIREBASE_SENDER_ID', '709834917216');
-    storage.setItem('MMC_FIREBASE_APP_ID', '1:709834917216:web:147b98578fcf3b33c34a05');
-    storage.setItem('MMC_FIREBASE_MEASUREMENT_ID', 'G-YYJWZN2L19');
-  }
-  
-  // Force upgrade/correction of old/incorrect API keys in local storage
-  const currentApiKey = storage.getItem('MMC_FIREBASE_API_KEY');
-  if (currentApiKey === 'AIzaSyCszSMi11-Nbj76U9dJEYDezbJayK2btko' || currentApiKey === 'AIzaSyCszSMi11-Nbj76U9dJEYDezbJayK2btko') {
-    storage.setItem('MMC_FIREBASE_API_KEY', 'AIzaSyCSzsMi11-Nbj76U9dJEYDezbJayK2btko');
   }
   
   setTimeout(() => {
