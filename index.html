@@ -1782,12 +1782,10 @@
   <span id="toastMsg">Action completed successfully!</span>
 </div>
 
-<script type="module">
+<script>
 // =====================================================
-// FIREBASE CONFIGURATION (Modular SDK v9+)
+// FIREBASE CONFIGURATION (Compat SDK)
 // =====================================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -1802,8 +1800,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+if (typeof firebase !== 'undefined') {
+  if (firebase.apps.length === 0) {
+    firebase.initializeApp(firebaseConfig);
+  }
+}
 
 // =====================================================
 // AUTO-CACHE BUSTER & APP INITIALIZATION
