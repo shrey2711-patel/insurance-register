@@ -1819,7 +1819,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.2.0";
+const CURRENT_VERSION = "1.2.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -1901,16 +1901,15 @@ function initDatabase() {
     applyFiltersAndStats();
   };
 
-  // Pre-fill simulator to actual local date or preserved simulated date
-  const preservedSimDate = storage.getItem('simulated_date');
-  if (preservedSimDate) {
-    SIMULATED_TODAY = new Date(preservedSimDate);
-    document.getElementById('dateSimulator').value = preservedSimDate;
-  } else {
-    const todayStr = new Date().toISOString().split('T')[0];
-    document.getElementById('dateSimulator').value = todayStr;
-    SIMULATED_TODAY = new Date(todayStr);
-  }
+  // Always initialize simulator to the actual current local date on startup
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  
+  document.getElementById('dateSimulator').value = todayStr;
+  SIMULATED_TODAY = new Date(d);
   SIMULATED_TODAY.setHours(0,0,0,0);
   
   // Set default message template if not set
@@ -3109,11 +3108,16 @@ function updateSimulatedDate() {
 }
 
 function resetSimulatedDate() {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  
   document.getElementById('dateSimulator').value = todayStr;
   storage.removeItem('simulated_date');
   
-  SIMULATED_TODAY = new Date(todayStr);
+  SIMULATED_TODAY = new Date(d);
   SIMULATED_TODAY.setHours(0,0,0,0);
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
   
