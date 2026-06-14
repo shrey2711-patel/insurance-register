@@ -121,17 +121,14 @@ function initDatabase() {
     applyFiltersAndStats();
   };
 
-  // Pre-fill simulator to actual local date or preserved simulated date
-  const preservedSimDate = storage.getItem('simulated_date');
-  if (preservedSimDate) {
-    SIMULATED_TODAY = new Date(preservedSimDate);
-    document.getElementById('dateSimulator').value = preservedSimDate;
-  } else {
-    const todayStr = new Date().toISOString().split('T')[0];
-    document.getElementById('dateSimulator').value = todayStr;
-    SIMULATED_TODAY = new Date(todayStr);
-  }
+  // Always initialize with today's live actual date
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('dateSimulator').value = todayStr;
+  SIMULATED_TODAY = new Date(todayStr);
   SIMULATED_TODAY.setHours(0,0,0,0);
+  
+  // Clear any old preserved simulation dates to start fresh
+  storage.removeItem('simulated_date');
   
   // Set default message template if not set
   if (!storage.getItem('whatsapp_template')) {
@@ -887,13 +884,21 @@ function updateSimulatedDate() {
   if (!selectedDate) return;
   SIMULATED_TODAY = new Date(selectedDate);
   SIMULATED_TODAY.setHours(0,0,0,0);
-  storage.setItem('simulated_date', selectedDate);
+  
+  // Only save if it's not today's live date
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (selectedDate !== todayStr) {
+    storage.setItem('simulated_date', selectedDate);
+    logActivity(`⏰ Register calendar simulated to: ${formatDate(selectedDate)}`, "info");
+  } else {
+    storage.removeItem('simulated_date');
+    logActivity(`📅 Using today's live date`, "info");
+  }
   
   // Update Header Date label
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
   
   applyFiltersAndStats();
-  logActivity(`⏰ Register calendar simulated to: ${formatDate(selectedDate)}`, "info");
 }
 
 function resetSimulatedDate() {
@@ -906,7 +911,25 @@ function resetSimulatedDate() {
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
   
   applyFiltersAndStats();
-  logActivity("⏰ Simulated calendar reset back to current actual system time.", "info");
+  logActivity("⏰ Calendar reset to today's live date.", "info");
+}
+
+// Live date updater - updates the date label every minute if it's live (not simulated)
+function startLiveDateUpdater() {
+  setInterval(() => {
+    // Check if currently on live date (not simulated to a past date)
+    const liveDate = new Date().toISOString().split('T')[0];
+    const simDate = document.getElementById('dateSimulator').value;
+    
+    // If the date changed (e.g., it's now a new day) and we're on live mode, update it
+    if (simDate === liveDate) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      SIMULATED_TODAY = today;
+      // Update the label to reflect current date
+      document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+    }
+  }, 60000); // Check every minute
 }
 
 function setStatusFilter(filter, el) {
@@ -2173,5 +2196,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initDatabase();
   updateSimulatedDate();
+  startLiveDateUpdater();
   checkSecurityAccess();
 });
