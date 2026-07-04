@@ -490,6 +490,7 @@ function openAddModal() {
   document.getElementById('addAmount').value = '';
   document.getElementById('addPhone').value = '';
   document.getElementById('addNotes').value = '';
+  document.getElementById('addDob').value = '';
   
   // Clear document files inputs and previews
   document.getElementById('addPolicyDoc').value = '';
@@ -511,6 +512,7 @@ async function submitAddEntry() {
   const amount = document.getElementById('addAmount').value;
   const phone = document.getElementById('addPhone').value.trim();
   const notes = document.getElementById('addNotes').value.trim();
+  const dob = document.getElementById('addDob').value;
   
   if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
     showToast("Please fill in all mandatory (*) fields!", true);
@@ -533,6 +535,7 @@ async function submitAddEntry() {
     amount: amount ? Number(amount) : '',
     phone: cleanAndFormatPhone(phone),
     notes: notes,
+    dob: dob || '',
     policy_doc: policyDoc,
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility
@@ -621,6 +624,7 @@ function openEditModal(idx) {
   document.getElementById('editAmount').value = item.amount || '';
   document.getElementById('editPhone').value = item.phone;
   document.getElementById('editNotes').value = item.notes || '';
+  document.getElementById('editDob').value = item.dob || '';
   
   // Reset file selectors
   document.getElementById('editPolicyDoc').value = '';
@@ -658,6 +662,7 @@ async function submitEditEntry() {
   const amount = document.getElementById('editAmount').value;
   const phone = document.getElementById('editPhone').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
+  const dob = document.getElementById('editDob').value;
   
   if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
     showToast("Please fill in all mandatory fields!", true);
@@ -688,6 +693,7 @@ async function submitEditEntry() {
     amount: amount ? Number(amount) : '',
     phone: cleanAndFormatPhone(phone),
     notes: notes,
+    dob: dob || '',
     policy_doc: policyDoc,
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility

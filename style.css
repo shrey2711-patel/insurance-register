@@ -1157,3 +1157,28 @@
       align-items: flex-start;
     }
   }
+
+  /* WhatsApp Birthday Wishes Button */
+  .btn-wa-action.birthday {
+    background: #d946ef !important;
+    color: #ffffff !important;
+    border: none;
+  }
+  .btn-wa-action.birthday:hover {
+    background: #c084fc !important;
+    transform: translateY(-1px);
+  }
+  .btn-wa-action.birthday.sent {
+    background: rgba(217, 70, 239, 0.08) !important;
+    border: 1px solid rgba(217, 70, 239, 0.4) !important;
+    color: #d946ef !important;
+    cursor: pointer;
+    transform: none;
+    box-shadow: none;
+  }
+  .btn-wa-action.birthday.sent:hover {
+    background: #d946ef !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px rgba(217, 70, 239, 0.3);
+  }

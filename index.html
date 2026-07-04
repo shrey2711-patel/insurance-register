@@ -1407,6 +1407,7 @@
         <button class="tab" onclick="setStatusFilter('3', this)">≤3 Days</button>
         <button class="tab" onclick="setStatusFilter('7', this)">≤7 Days</button>
         <button class="tab" onclick="setStatusFilter('unsent', this)">Unsent WhatsApp</button>
+        <button class="tab" onclick="setStatusFilter('birthday', this)"><i class="fa-solid fa-cake-candles" style="color:var(--purple); margin-right:4px;"></i> Birthdays Today</button>
       </div>
 
       <div class="btn-group">
@@ -1545,6 +1546,10 @@
           <label>Contact Phone Number *</label>
           <input type="text" class="form-input" id="addPhone" placeholder="e.g. 9426985344" required>
         </div>
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" class="form-input" id="addDob">
+        </div>
       </div>
       <div class="form-group">
         <label>Notes / Remarks (Act like a Register Book Note)</label>
@@ -1622,6 +1627,10 @@
           <label>Contact Phone Number *</label>
           <input type="text" class="form-input" id="editPhone" required>
         </div>
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" class="form-input" id="editDob">
+        </div>
       </div>
       <div class="form-group">
         <label>Notes / Remarks</label>
@@ -1655,27 +1664,32 @@
       <h2><i class="fa-brands fa-whatsapp" style="color:var(--accent);"></i> Custom WhatsApp Message Template</h2>
       <button class="modal-close" onclick="closeModal('templateModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
       <div class="form-group">
-        <label>Message Content Template</label>
-        <textarea class="form-input" id="messageTemplateInput" rows="7" oninput="updateTemplatePreview()" style="font-size:12.5px;line-height:1.5;"></textarea>
+        <label>Expiry Reminder Template</label>
+        <textarea class="form-input" id="messageTemplateInput" rows="4" oninput="updateTemplatePreview()" style="font-size:12.5px;line-height:1.5;"></textarea>
       </div>
-      <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
-        <strong>Supported Template Placeholders:</strong>
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Happy Birthday Wishes Template</label>
+        <textarea class="form-input" id="birthdayTemplateInput" rows="4" oninput="updateTemplatePreview()" style="font-size:12.5px;line-height:1.5;"></textarea>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px;">
+        <strong>Supported Placeholders:</strong>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-top: 6px; font-family:'DM Mono',monospace;">
           <div>{name} : Client Name</div>
-          <div>{vehicle} : Vehicle Model</div>
-          <div>{plate} : Plate Number</div>
-          <div>{insurance} : Insurance Company</div>
-          <div>{policy} : Policy Number</div>
-          <div>{expiry} : Expiry Date</div>
-          <div>{days} : Days Remaining</div>
           <div>{remarks} : Policy Notes</div>
+          <div>{vehicle} / {plate} / {insurance} (Only for Expiry)</div>
         </div>
       </div>
-      <div class="form-group">
-        <label>WhatsApp Live Template Preview</label>
-        <div class="template-preview" id="templatePreviewBlock">Loading preview...</div>
+      <div class="form-row" style="margin-top: 12px; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Preview (Expiry Reminder)</label>
+          <div class="template-preview" id="templatePreviewBlock" style="white-space: pre-wrap; font-size:11.5px; max-height:140px; overflow-y:auto;">Loading preview...</div>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Preview (Birthday Wishes)</label>
+          <div class="template-preview" id="birthdayPreviewBlock" style="white-space: pre-wrap; font-size:11.5px; max-height:140px; overflow-y:auto;">Loading preview...</div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1916,6 +1930,10 @@ function initDatabase() {
   if (!storage.getItem('whatsapp_template')) {
     const defaultTemplate = `Dear {name},\n\nThis is a friendly reminder that the insurance for your vehicle {vehicle} ({plate}) {expiry_status}.\n\n🚗 Vehicle: {vehicle}\n🔖 Plate Number: {plate}\n🏢 Provider: {insurance}\n📅 Expiry Date: {expiry}\n\nRemarks/Notes: {remarks}\n\nPlease renew at your earliest convenience to avoid penalties.\n\nThank you for choosing us!`;
     storage.setItem('whatsapp_template', defaultTemplate);
+  }
+  if (!storage.getItem('birthday_template')) {
+    const defaultBirthdayTemplate = `Dear {name},\n\nWishing you a very Happy Birthday! 🎂🎉\nMay this year bring you abundant joy, good health, and success in everything you do.\n\nBest wishes from Midas Money Care! 💐`;
+    storage.setItem('birthday_template', defaultBirthdayTemplate);
   }
 }
 
@@ -2464,6 +2482,15 @@ function formatDate(dateStr) {
   return `${day} ${month} ${year}`;
 }
 
+function isSameDayAndMonth(dateStr, targetDate) {
+  if (!dateStr) return false;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+  const month = Number(parts[1]) - 1;
+  const day = Number(parts[2]);
+  return month === targetDate.getMonth() && day === targetDate.getDate();
+}
+
 function formatCurrency(val) {
   if (!val || isNaN(val)) return '₹0';
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
@@ -2518,6 +2545,10 @@ function openAddModal() {
   if (addEnd._flatpickr) addEnd._flatpickr.clear();
   else addEnd.value = '';
 
+  const addDob = document.getElementById('addDob');
+  if (addDob._flatpickr) addDob._flatpickr.clear();
+  else addDob.value = '';
+
   document.getElementById('addAmount').value = '';
   document.getElementById('addPhone').value = '';
   document.getElementById('addNotes').value = '';
@@ -2542,6 +2573,7 @@ async function submitAddEntry() {
   const amount = document.getElementById('addAmount').value;
   const phone = document.getElementById('addPhone').value.trim();
   const notes = document.getElementById('addNotes').value.trim();
+  const dob = document.getElementById('addDob').value;
   
   if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
     showToast("Please fill in all mandatory (*) fields!", true);
@@ -2564,6 +2596,7 @@ async function submitAddEntry() {
     amount: amount ? Number(amount) : '',
     phone: cleanAndFormatPhone(phone),
     notes: notes,
+    dob: dob || '',
     policy_doc: policyDoc,
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility
@@ -2618,6 +2651,10 @@ function openEditModal(idx) {
   document.getElementById('editAmount').value = item.amount || '';
   document.getElementById('editPhone').value = item.phone;
   document.getElementById('editNotes').value = item.notes || '';
+
+  const editDob = document.getElementById('editDob');
+  if (editDob._flatpickr) editDob._flatpickr.setDate(item.dob || '');
+  else editDob.value = item.dob || '';
   
   // Reset file selectors
   document.getElementById('editPolicyDoc').value = '';
@@ -2655,6 +2692,7 @@ async function submitEditEntry() {
   const amount = document.getElementById('editAmount').value;
   const phone = document.getElementById('editPhone').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
+  const dob = document.getElementById('editDob').value;
   
   if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
     showToast("Please fill in all mandatory fields!", true);
@@ -2685,6 +2723,7 @@ async function submitEditEntry() {
     amount: amount ? Number(amount) : '',
     phone: cleanAndFormatPhone(phone),
     notes: notes,
+    dob: dob || '',
     policy_doc: policyDoc,
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility
@@ -3154,8 +3193,14 @@ function applyFiltersAndStats() {
   let expiredCount = 0;
   let urgentCount = 0;
   let incomingCount = 0;
+  let birthdayCount = 0;
   
   enriched.forEach(item => {
+    // Check birthdays (independent of target year/month filter)
+    if (isSameDayAndMonth(item.dob, SIMULATED_TODAY)) {
+      birthdayCount++;
+    }
+
     // Only calculate stats for policies matches target year
     const yearMatch = targetYear === 'all' || (item.expDate.getFullYear() === Number(targetYear));
     if (!yearMatch) return;
@@ -3181,16 +3226,14 @@ function applyFiltersAndStats() {
   document.getElementById('urgentCount').textContent = urgentCount;
   document.getElementById('incomingCount').textContent = incomingCount;
 
+  // Update Birthdays Today tab count badge
+  const bdayTab = document.querySelector('.tab[onclick*="birthday"]');
+  if (bdayTab) {
+    bdayTab.innerHTML = `<i class="fa-solid fa-cake-candles" style="color:var(--purple); margin-right:4px;"></i> Birthdays Today ${birthdayCount > 0 ? `<span class="badge-count" style="background:#d946ef; color:#fff; padding:2px 6px; border-radius:10px; font-size:9.5px; margin-left:4px; font-weight:bold;">${birthdayCount}</span>` : ''}`;
+  }
+
   // Perform filtering on dataset
   filteredData = enriched.filter(item => {
-    // Year filter check
-    const yearMatch = targetYear === 'all' || (item.expDate.getFullYear() === Number(targetYear));
-    if (!yearMatch) return false;
-    
-    // Month filter check (based on end date)
-    const monthMatch = selectedMonth === 'all' || (item.expDate.getMonth() === Number(selectedMonth));
-    if (!monthMatch) return false;
-    
     // Search query check
     let queryMatch = true;
     if (query) {
@@ -3202,7 +3245,19 @@ function applyFiltersAndStats() {
     }
     if (!queryMatch) return false;
     
-    // Status Filter Check
+    // Status Filter Check - Birthday overrides month and year filters
+    if (activeStatusFilter === 'birthday') {
+      return isSameDayAndMonth(item.dob, SIMULATED_TODAY);
+    }
+
+    // Year filter check
+    const yearMatch = targetYear === 'all' || (item.expDate.getFullYear() === Number(targetYear));
+    if (!yearMatch) return false;
+    
+    // Month filter check (based on end date)
+    const monthMatch = selectedMonth === 'all' || (item.expDate.getMonth() === Number(selectedMonth));
+    if (!monthMatch) return false;
+    
     const bucket = getDaysBucket(item.daysLeft);
     const isSent = sentSet.has(item.id);
     
@@ -3242,6 +3297,17 @@ function renderTable(sentSet) {
     const bucket = getDaysBucket(item.daysLeft);
     const label = formatDaysLabel(item.daysLeft);
     const isSent = sentSet.has(item.id);
+
+    const isBirthdayToday = isSameDayAndMonth(item.dob, SIMULATED_TODAY);
+
+    let btnBday = '';
+    if (isBirthdayToday) {
+      const isBdaySent = sentSet.has(item.id + '_bday');
+      const bdayUrl = buildWhatsAppBirthdayLink(item);
+      btnBday = isBdaySent
+        ? `<a href="${bdayUrl}" target="_blank" class="btn-wa-action birthday sent" onclick="markAsSent('${item.id}_bday')" title="Resend Birthday Wishes"><i class="fa-solid fa-cake-candles"></i> Wished</a>`
+        : `<a href="${bdayUrl}" target="_blank" class="btn-wa-action birthday" onclick="markAsSent('${item.id}_bday')" title="Send Birthday Wishes"><i class="fa-solid fa-cake-candles"></i> Wish Birthday</a>`;
+    }
     
     // Detect data warnings
     let integrityHelp = '';
@@ -3302,8 +3368,9 @@ function renderTable(sentSet) {
       <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;">${index + 1}</td>
       <td>
         <div class="stack-cell">
-          <span class="stack-primary">${item.name}</span>
+          <span class="stack-primary">${item.name} ${isBirthdayToday ? '<span style="color:#d946ef; font-size:14px;" title="Birthday Today! 🎂">🎂</span>' : ''}</span>
           <span class="stack-secondary">${item.phone || 'NO PHONE'}</span>
+          ${item.dob ? `<span class="stack-secondary" style="font-size:11px;color:var(--text-muted);"><i class="fa-solid fa-cake-candles" style="color:var(--purple);font-size:10px;margin-right:2px;"></i> DOB: ${formatDate(item.dob)}</span>` : ''}
           ${integrityHelp}
         </div>
       </td>
@@ -3339,6 +3406,7 @@ function renderTable(sentSet) {
       </td>
       <td>
         <div style="display:flex;gap:6px;">
+          ${btnBday}
           ${btnWa}
           <button class="btn btn-secondary" style="padding:6px 10px;" onclick="openEditModal(${item.originalIdx})"><i class="fa-regular fa-pen-to-square"></i></button>
           <button class="btn btn-danger" style="padding:6px 10px;" onclick="deleteEntry(${item.originalIdx})"><i class="fa-regular fa-trash-can"></i></button>
@@ -3413,14 +3481,31 @@ function buildWhatsAppLink(item) {
   return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
 }
 
+function buildWhatsAppBirthdayLink(item) {
+  const template = storage.getItem('birthday_template') || '';
+  const phone = item.phone.replace(/[^0-9]/g, '');
+  
+  const msg = template
+    .replace(/{name}/g, item.name)
+    .replace(/{remarks}/g, item.notes || 'None')
+    .replace(/{dob}/g, item.dob ? formatDate(item.dob) : 'N/A');
+
+  return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+}
+
 function markAsSent(id) {
   const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
   sentSet.add(id);
   storage.setItem('waSent', JSON.stringify([...sentSet]));
   
-  const item = DATA.find(x => String(x.id) === String(id));
+  const cleanId = id.endsWith('_bday') ? id.slice(0, -5) : id;
+  const item = DATA.find(x => String(x.id) === String(cleanId));
   if (item) {
-    logActivity(`💬 WhatsApp opened for client: ${item.name}`, "info");
+    if (id.endsWith('_bday')) {
+      logActivity(`🎉 Birthday greeting WhatsApp opened for: ${item.name}`, "info");
+    } else {
+      logActivity(`💬 WhatsApp opened for client: ${item.name}`, "info");
+    }
   }
   
   // Quick timeout to update UI state
@@ -3595,12 +3680,14 @@ function handleJSONBackupSelect(input) {
 // MESSAGE TEMPLATING SYSTEM
 // ==============================================
 function openTemplateModal() {
-  document.getElementById('messageTemplateInput').value = storage.getItem('whatsapp_template');
+  document.getElementById('messageTemplateInput').value = storage.getItem('whatsapp_template') || '';
+  document.getElementById('birthdayTemplateInput').value = storage.getItem('birthday_template') || '';
   updateTemplatePreview();
   openModal('templateModal');
 }
 
 function updateTemplatePreview() {
+  // Expiry template preview
   const template = document.getElementById('messageTemplateInput').value;
   const mockItem = {
     name: "BHARATBHAI NAGARBHAI PATEL",
@@ -3627,14 +3714,24 @@ function updateTemplatePreview() {
     .replace(/{expiry_status}/g, statusStr);
 
   document.getElementById('templatePreviewBlock').textContent = preview;
+
+  // Birthday template preview
+  const birthdayTemplate = document.getElementById('birthdayTemplateInput').value;
+  const birthdayPreview = birthdayTemplate
+    .replace(/{name}/g, mockItem.name)
+    .replace(/{remarks}/g, mockItem.notes);
+
+  document.getElementById('birthdayPreviewBlock').textContent = birthdayPreview;
 }
 
 function saveMessageTemplate() {
   const template = document.getElementById('messageTemplateInput').value;
+  const birthdayTemplate = document.getElementById('birthdayTemplateInput').value;
   storage.setItem('whatsapp_template', template);
+  storage.setItem('birthday_template', birthdayTemplate);
   closeModal('templateModal');
-  showToast("WhatsApp message template saved successfully!");
-  logActivity("💬 Custom WhatsApp reminder message template updated.", "info");
+  showToast("WhatsApp message templates saved successfully!");
+  logActivity("💬 Custom WhatsApp message templates updated.", "info");
 }
 
 function wipeEntireRegister() {
@@ -4142,8 +4239,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       flatpickr("#addStartDate", fpConfig);
       flatpickr("#addEndDate", fpConfig);
+      flatpickr("#addDob", fpConfig);
       flatpickr("#editStartDate", fpConfig);
       flatpickr("#editEndDate", fpConfig);
+      flatpickr("#editDob", fpConfig);
     } else {
       console.warn("Flatpickr library is not loaded. Falling back to native date inputs.");
     }
