@@ -1308,6 +1308,7 @@
     <div class="nav-group">
       <span class="nav-title">Register Tools</span>
       <button class="nav-btn" onclick="openAddModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-plus" style="color:var(--accent);"></i> New Daily Entry</span></span></button>
+      <button class="nav-btn" onclick="checkDailyAlerts(true)"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-bell" style="color:var(--purple);"></i> View Daily Alerts &nbsp;<span id="alertsSidebarBadge" style="display:none; background:#d946ef; color:#fff; padding:1px 5px; border-radius:10px; font-size:9.5px; font-weight:bold;">0</span></span></span></button>
       <button class="nav-btn" onclick="exportExcel()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-excel" style="color:var(--accent);"></i> Export Excel Sheet</span></span></button>
       <button class="nav-btn" onclick="openTemplateModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-brands fa-whatsapp" style="color:var(--accent);"></i> Edit Message Template</span></span></button>
       <button class="nav-btn" onclick="openSecuritySettingsModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-cloud" style="color:var(--amber);"></i> Firebase Cloud Sync Settings</span></span></button>
@@ -1699,6 +1700,25 @@
   </div>
 </div>
 
+<!-- 6. DAILY ALERTS & CELEBRATIONS MODAL -->
+<div class="modal-overlay" id="dailyAlertsModal">
+  <div class="modal" style="max-width: 650px; border-top: 5px solid var(--purple);">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-bell" style="color:var(--purple); animation: swing 2s infinite ease-in-out; transform-origin: top center;"></i> Today's Alerts & Celebrations</h2>
+      <button class="modal-close" onclick="closeModal('dailyAlertsModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 8px;">
+      <div id="alertsModalContent">
+        <!-- Dynamically populated sections -->
+      </div>
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;">
+      <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;" id="alertsModalSummary"></span>
+      <button class="btn btn-primary" onclick="closeModal('dailyAlertsModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- SECURITY & API SETTINGS MODAL -->
 <div class="modal-overlay" id="securitySettingsModal">
   <div class="modal" style="max-width: 580px;">
@@ -1872,6 +1892,7 @@ let DATA = [];
 let filteredData = [];
 let SIMULATED_TODAY = new Date(); // Holds current simulated calendar date
 let activeStatusFilter = 'all';
+let initialLoadCompleted = false;
 const uploadingDocIds = new Set();
 
 // Setup LocalStorage or load defaults
@@ -3194,11 +3215,16 @@ function applyFiltersAndStats() {
   let urgentCount = 0;
   let incomingCount = 0;
   let birthdayCount = 0;
+  let renewalsTodayCount = 0;
   
   enriched.forEach(item => {
     // Check birthdays (independent of target year/month filter)
     if (isSameDayAndMonth(item.dob, SIMULATED_TODAY)) {
       birthdayCount++;
+    }
+    // Check renewals expiring today (independent of target year/month filter)
+    if (item.daysLeft === 0) {
+      renewalsTodayCount++;
     }
 
     // Only calculate stats for policies matches target year
@@ -3230,6 +3256,18 @@ function applyFiltersAndStats() {
   const bdayTab = document.querySelector('.tab[onclick*="birthday"]');
   if (bdayTab) {
     bdayTab.innerHTML = `<i class="fa-solid fa-cake-candles" style="color:var(--purple); margin-right:4px;"></i> Birthdays Today ${birthdayCount > 0 ? `<span class="badge-count" style="background:#d946ef; color:#fff; padding:2px 6px; border-radius:10px; font-size:9.5px; margin-left:4px; font-weight:bold;">${birthdayCount}</span>` : ''}`;
+  }
+
+  // Update sidebar alerts badge
+  const totalAlerts = birthdayCount + renewalsTodayCount;
+  const sidebarBadge = document.getElementById('alertsSidebarBadge');
+  if (sidebarBadge) {
+    if (totalAlerts > 0) {
+      sidebarBadge.textContent = totalAlerts;
+      sidebarBadge.style.display = 'inline-block';
+    } else {
+      sidebarBadge.style.display = 'none';
+    }
   }
 
   // Perform filtering on dataset
@@ -3277,6 +3315,14 @@ function applyFiltersAndStats() {
   // Real-time charts refresh hook
   if (currentView === 'analytics') {
     renderAnalyticsCharts();
+  }
+
+  // Trigger daily alerts popup on load if alerts exist
+  if (!initialLoadCompleted) {
+    initialLoadCompleted = true;
+    setTimeout(() => {
+      checkDailyAlerts(false);
+    }, 700);
   }
 }
 
@@ -3510,6 +3556,103 @@ function markAsSent(id) {
   
   // Quick timeout to update UI state
   setTimeout(() => applyFiltersAndStats(), 1000);
+}
+
+function checkDailyAlerts(force = false) {
+  const bdays = [];
+  const renewals = [];
+  const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
+  
+  DATA.forEach(item => {
+    // Check birthdays
+    if (isSameDayAndMonth(item.dob, SIMULATED_TODAY)) {
+      bdays.push(item);
+    }
+    
+    // Check renewals due today
+    const exp = new Date(item.end_date);
+    exp.setHours(0,0,0,0);
+    const diff = Math.ceil((exp - SIMULATED_TODAY) / 86400000);
+    if (diff === 0) {
+      renewals.push({ ...item, daysLeft: diff });
+    }
+  });
+  
+  if (bdays.length === 0 && renewals.length === 0) {
+    if (force) {
+      showToast("No alerts or birthdays for today!");
+    }
+    return;
+  }
+  
+  let html = '';
+  
+  if (bdays.length > 0) {
+    html += `
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #d946ef; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 14.5px; border-bottom: 1px solid rgba(217, 70, 239, 0.2); padding-bottom: 6px;">
+          <i class="fa-solid fa-cake-candles"></i> Birthdays Today (${bdays.length})
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${bdays.map(item => {
+            const isBdaySent = sentSet.has(item.id + '_bday');
+            const bdayUrl = buildWhatsAppBirthdayLink(item);
+            const btnBdayClass = isBdaySent ? 'btn-wa-action birthday sent' : 'btn-wa-action birthday';
+            const btnText = isBdaySent ? '<i class="fa-solid fa-circle-check"></i> Wished' : '<i class="fa-solid fa-cake-candles"></i> Wish Birthday';
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(217, 70, 239, 0.04); border: 1px solid rgba(217, 70, 239, 0.15); padding: 10px 14px; border-radius: 8px;">
+                <div>
+                  <div style="font-weight: 700; color: var(--text); font-size: 13.5px;">${item.name}</div>
+                  <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                    <i class="fa-solid fa-phone" style="font-size: 10px;"></i> ${item.phone} ${item.notes ? `• 📝 ${item.notes}` : ''}
+                  </div>
+                </div>
+                <div>
+                  <a href="${bdayUrl}" target="_blank" class="${btnBdayClass}" onclick="markAsSent('${item.id}_bday')">${btnText}</a>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  if (renewals.length > 0) {
+    html += `
+      <div>
+        <h3 style="color: var(--orange); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 14.5px; border-bottom: 1px solid rgba(249, 115, 22, 0.2); padding-bottom: 6px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Insurance Renewals Expiring Today (${renewals.length})
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${renewals.map(item => {
+            const isSent = sentSet.has(item.id);
+            const waUrl = buildWhatsAppLink(item);
+            const btnWaClass = isSent ? 'btn-wa-action sent' : 'btn-wa-action';
+            const btnText = isSent ? '<i class="fa-solid fa-circle-check"></i> Resend' : '<i class="fa-brands fa-whatsapp"></i> Send';
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(249, 115, 22, 0.04); border: 1px solid rgba(249, 115, 22, 0.15); padding: 10px 14px; border-radius: 8px;">
+                <div>
+                  <div style="font-weight: 700; color: var(--text); font-size: 13.5px;">${item.name}</div>
+                  <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                    🚗 ${item.vehicle} (${item.plate}) • 🏢 ${item.insurance}
+                  </div>
+                </div>
+                <div>
+                  <a href="${waUrl}" target="_blank" class="${btnWaClass}" onclick="markAsSent('${item.id}')">${btnText}</a>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  document.getElementById('alertsModalContent').innerHTML = html;
+  document.getElementById('alertsModalSummary').textContent = `${bdays.length} Birthday(s), ${renewals.length} Renewal(s) due today`;
+  
+  openModal('dailyAlertsModal');
 }
 
 // Bulk sender queue

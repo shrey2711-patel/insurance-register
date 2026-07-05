@@ -1182,3 +1182,13 @@
     transform: translateY(-1px);
     box-shadow: 0 0 8px rgba(217, 70, 239, 0.3);
   }
+
+  /* Bell swinging micro-animation */
+  @keyframes swing {
+    0%, 100% { transform: rotate(0deg); }
+    10% { transform: rotate(15deg); }
+    20% { transform: rotate(-10deg); }
+    30% { transform: rotate(5deg); }
+    40% { transform: rotate(-5deg); }
+    50% { transform: rotate(0deg); }
+  }
