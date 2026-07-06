@@ -1286,9 +1286,14 @@
     <div class="brand" style="flex-direction: column; align-items: flex-start; gap: 14px; border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: -10px;">
       <div class="brand-logo" style="width: 100%; max-height: 85px; display: flex; align-items: center; overflow: hidden;">
         <img src="logo.png" alt="Midas Money Care Logo" style="max-width: 100%; max-height: 75px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(148, 163, 184, 0.08));">
-      <div class="brand-text">
+      </div>
+      <div class="brand-text" style="width: 100%;">
         <h1 style="font-size: 14.5px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; text-transform: uppercase;">Midas Money Care</h1>
         <p id="todayDateLabel" style="margin-top: 2px;">Loading date...</p>
+        <button class="btn btn-secondary" onclick="checkDailyAlerts(true)" style="margin-top:8px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:11.5px; padding:6px 10px; border-color:var(--purple); color:var(--purple); background:rgba(124,58,237,0.05); cursor:pointer;">
+          <i class="fa-solid fa-bell"></i> Today Activity
+          <span id="todayActivityBadge" style="display:none; background:#d946ef; color:#fff; padding:1px 5px; border-radius:10px; font-size:9.5px; font-weight:bold; margin-left:4px;">0</span>
+        </button>
       </div>
     </div>
 
@@ -1308,7 +1313,7 @@
     <div class="nav-group">
       <span class="nav-title">Register Tools</span>
       <button class="nav-btn" onclick="openAddModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-plus" style="color:var(--accent);"></i> New Daily Entry</span></span></button>
-      <button class="nav-btn" onclick="checkDailyAlerts(true)"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-bell" style="color:var(--purple);"></i> Today Activity &nbsp;<span id="alertsSidebarBadge" style="display:none; background:#d946ef; color:#fff; padding:1px 5px; border-radius:10px; font-size:9.5px; font-weight:bold;">0</span></span></span></button>
+      <button class="nav-btn" onclick="checkDailyAlerts(true)"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-bell" style="color:var(--purple);"></i> View Daily Alerts &nbsp;<span id="alertsSidebarBadge" style="display:none; background:#d946ef; color:#fff; padding:1px 5px; border-radius:10px; font-size:9.5px; font-weight:bold;">0</span></span></span></button>
       <button class="nav-btn" onclick="exportExcel()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-excel" style="color:var(--accent);"></i> Export Excel Sheet</span></span></button>
       <button class="nav-btn" onclick="openTemplateModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-brands fa-whatsapp" style="color:var(--accent);"></i> Edit Message Template</span></span></button>
       <button class="nav-btn" onclick="openSecuritySettingsModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-cloud" style="color:var(--amber);"></i> Firebase Cloud Sync Settings</span></span></button>
@@ -3270,6 +3275,17 @@ function applyFiltersAndStats() {
     }
   }
 
+  // Update brand header "Today Activity" badge
+  const todayActivityBadge = document.getElementById('todayActivityBadge');
+  if (todayActivityBadge) {
+    if (totalAlerts > 0) {
+      todayActivityBadge.textContent = totalAlerts;
+      todayActivityBadge.style.display = 'inline-block';
+    } else {
+      todayActivityBadge.style.display = 'none';
+    }
+  }
+
   // Perform filtering on dataset
   filteredData = enriched.filter(item => {
     // Search query check
@@ -4403,292 +4419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFirebase();
   }, 800);
 });
-
-// ==============================================
-// SPOTLIGHT COMMAND PALETTE SEARCH SYSTEM
-// ==============================================
-let spotlightActive = false;
-let spotlightSelectedIndex = -1;
-let spotlightFilteredItems = [];
-
-const SPOTLIGHT_COMMANDS = [
-  {
-    title: "Go to Table Register",
-    subtitle: "View policies register details table",
-    icon: "fa-table-list",
-    category: "Commands",
-    action: () => switchView('table')
-  },
-  {
-    title: "Go to Analytics Dashboard",
-    subtitle: "View interactive charts & metrics",
-    icon: "fa-chart-pie",
-    category: "Commands",
-    action: () => switchView('analytics')
-  },
-  {
-    title: "New Policy Entry",
-    subtitle: "Add a new policy record to ledger",
-    icon: "fa-plus",
-    category: "Commands",
-    action: () => openAddModal()
-  },
-  {
-    title: "Edit Message Templates",
-    subtitle: "Customize WhatsApp messages drafts",
-    icon: "fa-whatsapp",
-    category: "Commands",
-    action: () => openTemplateModal()
-  },
-  {
-    title: "Firebase Cloud Sync Settings",
-    subtitle: "Configure Firebase synchronization options",
-    icon: "fa-cloud",
-    category: "Commands",
-    action: () => openSecuritySettingsModal()
-  },
-  {
-    title: "View Today Activity",
-    subtitle: "Show today's birthday and expiry list",
-    icon: "fa-bell",
-    category: "Commands",
-    action: () => checkDailyAlerts(true)
-  },
-  {
-    title: "Download Ledger Backup",
-    subtitle: "Export data to JSON file",
-    icon: "fa-file-arrow-down",
-    category: "Commands",
-    action: () => downloadJSONBackup()
-  },
-  {
-    title: "Restore Ledger Backup",
-    subtitle: "Import data from JSON backup file",
-    icon: "fa-file-arrow-up",
-    category: "Commands",
-    action: () => triggerJSONBackupSelect()
-  },
-  {
-    title: "Wipe Entire Register",
-    subtitle: "Danger: Permanently clear all entries",
-    icon: "fa-trash-can",
-    category: "Commands",
-    action: () => wipeEntireRegister()
-  },
-  {
-    title: "File a Claim",
-    subtitle: "Claim management service (Coming Soon)",
-    icon: "fa-file-invoice",
-    category: "Claims",
-    action: () => showToast("Claims management module coming soon!")
-  }
-];
-
-function toggleSpotlight() {
-  if (spotlightActive) {
-    closeSpotlight();
-  } else {
-    openSpotlight();
-  }
-}
-
-function openSpotlight() {
-  spotlightActive = true;
-  const overlay = document.getElementById('spotlightOverlay');
-  overlay.style.display = 'flex';
-  const input = document.getElementById('spotlightInput');
-  input.value = '';
-  input.focus();
-  spotlightSelectedIndex = -1;
-  updateSpotlightResults('');
-}
-
-function closeSpotlight() {
-  spotlightActive = false;
-  document.getElementById('spotlightOverlay').style.display = 'none';
-}
-
-function updateSpotlightResults(query) {
-  query = query.trim().toLowerCase();
-  const resultsContainer = document.getElementById('spotlightResults');
-  
-  let matchedCommands = SPOTLIGHT_COMMANDS.filter(cmd => 
-    cmd.title.toLowerCase().includes(query) || 
-    cmd.subtitle.toLowerCase().includes(query)
-  );
-  
-  let matchedPolicies = [];
-  if (query.length > 0) {
-    matchedPolicies = DATA.filter(item => 
-      item.name.toLowerCase().includes(query) ||
-      item.vehicle.toLowerCase().includes(query) ||
-      item.plate.toLowerCase().includes(query) ||
-      (item.phone && item.phone.includes(query)) ||
-      (item.policy_no && item.policy_no.toLowerCase().includes(query))
-    ).map(item => ({
-      title: item.name,
-      subtitle: `${item.vehicle} (${item.plate}) • Phone: ${item.phone} • Exp: ${formatDate(item.end_date)}`,
-      icon: "fa-user-shield",
-      category: "Policies",
-      action: () => openEditModal(DATA.indexOf(item))
-    }));
-  }
-  
-  let combinedResults = [];
-  if (query.length === 0) {
-    combinedResults = SPOTLIGHT_COMMANDS.slice(0, 6);
-  } else {
-    combinedResults = [...matchedCommands, ...matchedPolicies].slice(0, 6);
-  }
-  
-  spotlightFilteredItems = combinedResults;
-  
-  if (combinedResults.length === 0) {
-    resultsContainer.innerHTML = `
-      <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px;">
-        <i class="fa-solid fa-face-frown" style="font-size: 20px; margin-bottom: 8px; display: block;"></i>
-        No matching policies or commands found
-      </div>
-    `;
-    return;
-  }
-  
-  const groups = {};
-  combinedResults.forEach(item => {
-    if (!groups[item.category]) {
-      groups[item.category] = [];
-    }
-    groups[item.category].push(item);
-  });
-  
-  let html = '';
-  let overallIdx = 0;
-  
-  for (const category in groups) {
-    const isClaims = category === 'Claims';
-    const badgeClass = isClaims ? 'spotlight-group-badge bday' : 'spotlight-group-badge';
-    html += `
-      <div class="spotlight-group-title">
-        <span>${category}</span>
-        <span class="${badgeClass}">${groups[category].length}</span>
-      </div>
-    `;
-    
-    groups[category].forEach(item => {
-      const isSelected = overallIdx === spotlightSelectedIndex;
-      const selectedClass = isSelected ? 'selected' : '';
-      
-      html += `
-        <div class="spotlight-item ${selectedClass}" data-index="${overallIdx}" onclick="executeSpotlightItem(${overallIdx})">
-          <div class="spotlight-item-main">
-            <div class="spotlight-item-icon">
-              <i class="fa-solid ${item.icon}"></i>
-            </div>
-            <div class="spotlight-item-details">
-              <span class="spotlight-item-title">${item.title}</span>
-              <span class="spotlight-item-subtitle">${item.subtitle}</span>
-            </div>
-          </div>
-          <div class="spotlight-item-action-hint">
-            ${category === 'Commands' ? 'Execute' : 'Edit'}
-          </div>
-        </div>
-      `;
-      overallIdx++;
-    });
-  }
-  
-  resultsContainer.innerHTML = html;
-}
-
-function executeSpotlightItem(index) {
-  const item = spotlightFilteredItems[index];
-  if (item) {
-    closeSpotlight();
-    item.action();
-  }
-}
-
-function handleSpotlightSearch(value) {
-  spotlightSelectedIndex = -1;
-  updateSpotlightResults(value);
-}
-
-window.addEventListener('keydown', (e) => {
-  const isAltF = e.altKey && (e.key === 'f' || e.key === 'F');
-  const isCmdK = (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K');
-  
-  if (isAltF || isCmdK) {
-    e.preventDefault();
-    toggleSpotlight();
-    return;
-  }
-  
-  if (!spotlightActive) return;
-  
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    closeSpotlight();
-    return;
-  }
-  
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    spotlightSelectedIndex++;
-    if (spotlightSelectedIndex >= spotlightFilteredItems.length) {
-      spotlightSelectedIndex = 0;
-    }
-    updateSpotlightResults(document.getElementById('spotlightInput').value);
-    scrollToActiveItem();
-    return;
-  }
-  
-  if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    spotlightSelectedIndex--;
-    if (spotlightSelectedIndex < 0) {
-      spotlightSelectedIndex = spotlightFilteredItems.length - 1;
-    }
-    updateSpotlightResults(document.getElementById('spotlightInput').value);
-    scrollToActiveItem();
-    return;
-  }
-  
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (spotlightSelectedIndex >= 0 && spotlightSelectedIndex < spotlightFilteredItems.length) {
-      executeSpotlightItem(spotlightSelectedIndex);
-    } else if (spotlightFilteredItems.length > 0) {
-      executeSpotlightItem(0);
-    }
-    return;
-  }
-});
-
-function scrollToActiveItem() {
-  setTimeout(() => {
-    const activeEl = document.querySelector('.spotlight-item.selected');
-    if (activeEl) {
-      activeEl.scrollIntoView({ block: 'nearest' });
-    }
-  }, 10);
-}
 </script>
-
-<!-- SPOTLIGHT COMMAND PALETTE SEARCH OVERLAY -->
-<div id="spotlightOverlay" onclick="closeSpotlight()">
-  <div id="spotlightCard" onclick="event.stopPropagation()">
-    <div style="display: flex; align-items: center; padding: 14px 18px; gap: 12px;">
-      <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); font-size: 16px;"></i>
-      <input type="text" id="spotlightInput" placeholder="Search policies, commands, or claims..." oninput="handleSpotlightSearch(this.value)" autocomplete="off">
-      <div style="display: flex; align-items: center; gap: 4px;">
-        <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); background: rgba(0, 0, 0, 0.05); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--border); font-family: monospace;">ESC</span>
-      </div>
-    </div>
-    <div id="spotlightResults"></div>
-  </div>
-</div>
-
 <!-- Hidden restore ledger backup selector -->
 <input type="file" id="jsonBackupInput" accept=".json" style="display:none;" onchange="handleJSONBackupSelect(this)">
 
