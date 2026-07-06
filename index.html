@@ -1300,7 +1300,7 @@
     <!-- Active Target Year Simulator -->
     <div class="nav-group">
       <span class="nav-title">Target Register Year</span>
-      <select class="select-pill" id="targetYearFilter" onchange="applyFiltersAndStats()" style="width: 100%;">
+      <select class="select-pill" id="targetYearFilter" onchange="currentPage = 1; applyFiltersAndStats()" style="width: 100%;">
         <option value="all">All Years</option>
         <option value="2025">2025 Fiscal</option>
         <option value="2026" selected>2026 Fiscal</option>
@@ -1375,11 +1375,11 @@
     <div class="card control-row">
       <div class="search-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="search-bar" id="searchBox" placeholder="Search by name, vehicle model, plate number, provider..." oninput="applyFiltersAndStats()">
+        <input type="text" class="search-bar" id="searchBox" placeholder="Search by name, vehicle model, plate number, provider..." oninput="currentPage = 1; applyFiltersAndStats()">
       </div>
       <div class="filter-bar">
         <!-- Month Filter Selector -->
-        <select class="select-pill" id="monthFilter" onchange="applyFiltersAndStats()">
+        <select class="select-pill" id="monthFilter" onchange="currentPage = 1; applyFiltersAndStats()">
           <option value="all">All Months (Jan-Dec)</option>
           <option value="0">January</option>
           <option value="1">February</option>
@@ -1445,6 +1445,24 @@
             <!-- Row data injected here dynamically -->
           </tbody>
         </table>
+      </div>
+
+      <!-- PAGINATION CONTROLS -->
+      <div id="paginationControls" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.01); border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius); flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">
+          Showing <span id="paginationRange" style="font-weight: 700; color: var(--text);">0-0</span> of <span id="paginationTotal" style="font-weight: 700; color: var(--text);">0</span> records
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-secondary" id="btnPrevPage" onclick="changePage(-1)" style="padding: 6px 12px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; height: auto; width: auto; cursor: pointer;">
+            <i class="fa-solid fa-angle-left"></i> Previous
+          </button>
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 600; min-width: 80px; text-align: center;">
+            Page <span id="currentPageNum" style="color: var(--text); font-weight: 700;">1</span> of <span id="totalPageNum" style="color: var(--text); font-weight: 700;">1</span>
+          </span>
+          <button class="btn btn-secondary" id="btnNextPage" onclick="changePage(1)" style="padding: 6px 12px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; height: auto; width: auto; cursor: pointer;">
+            Next <i class="fa-solid fa-angle-right"></i>
+          </button>
+        </div>
       </div>
       
       <!-- EMPTY STATE -->
@@ -1858,7 +1876,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.2.2";
+const CURRENT_VERSION = "1.3.0";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -1898,6 +1916,8 @@ let filteredData = [];
 let SIMULATED_TODAY = new Date(); // Holds current simulated calendar date
 let activeStatusFilter = 'all';
 let initialLoadCompleted = false;
+let currentPage = 1;
+const rowsPerPage = 10;
 const uploadingDocIds = new Set();
 
 // Setup LocalStorage or load defaults
@@ -3223,6 +3243,7 @@ function setStatusFilter(filter, el) {
   activeStatusFilter = filter;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  currentPage = 1;
   applyFiltersAndStats();
 }
 
@@ -3374,17 +3395,43 @@ function applyFiltersAndStats() {
 function renderTable(sentSet) {
   const tbody = document.getElementById('registerTableBody');
   const empty = document.getElementById('emptyRegisterState');
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
   
   tbody.innerHTML = '';
+  if (selectAllCheckbox) selectAllCheckbox.checked = false;
   
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const startIdx = (currentPage - 1) * rowsPerPage;
+  const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+  const pageData = filteredData.slice(startIdx, endIdx);
+  
+  const rangeEl = document.getElementById('paginationRange');
+  const totalEl = document.getElementById('paginationTotal');
+  const currentEl = document.getElementById('currentPageNum');
+  const totalPageEl = document.getElementById('totalPageNum');
+  const btnPrev = document.getElementById('btnPrevPage');
+  const btnNext = document.getElementById('btnNextPage');
+  const pagControls = document.getElementById('paginationControls');
+
   if (filteredData.length === 0) {
     empty.style.display = 'block';
+    if (pagControls) pagControls.style.display = 'none';
     return;
   }
   
   empty.style.display = 'none';
+  if (pagControls) pagControls.style.display = 'flex';
+  if (rangeEl) rangeEl.textContent = `${startIdx + 1}-${endIdx}`;
+  if (totalEl) totalEl.textContent = filteredData.length;
+  if (currentEl) currentEl.textContent = currentPage;
+  if (totalPageEl) totalPageEl.textContent = totalPages;
+  if (btnPrev) btnPrev.disabled = currentPage === 1;
+  if (btnNext) btnNext.disabled = currentPage === totalPages;
   
-  filteredData.forEach((item, index) => {
+  pageData.forEach((item, index) => {
     const bucket = getDaysBucket(item.daysLeft);
     const label = formatDaysLabel(item.daysLeft);
     const isSent = sentSet.has(item.id);
@@ -3456,7 +3503,7 @@ function renderTable(sentSet) {
     tr.id = `row-${item.id}`;
     tr.innerHTML = `
       <td style="padding-left:16px;"><input type="checkbox" class="custom-cb row-cb" data-id="${item.id}" onchange="updateSelectedCount()"></td>
-      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;">${index + 1}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;">${startIdx + index + 1}</td>
       <td>
         <div class="stack-cell">
           <span class="stack-primary">${item.name} ${isBirthdayToday ? '<span style="color:#d946ef; font-size:14px;" title="Birthday Today! 🎂">🎂</span>' : ''}</span>
@@ -3506,6 +3553,16 @@ function renderTable(sentSet) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+function changePage(dir) {
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+  currentPage += dir;
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  
+  const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
+  renderTable(sentSet);
 }
 
 function toggleRemarksExpand(el) {
