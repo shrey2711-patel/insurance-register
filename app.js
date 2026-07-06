@@ -241,6 +241,19 @@ function saveAllToIndexedDB() {
   };
 }
 
+function getFpValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  if (el._flatpickr && el._flatpickr.selectedDates.length > 0) {
+    const d = el._flatpickr.selectedDates[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return el.value;
+}
+
 // File helper: Convert file inputs to Base64 objects
 function getFileData(fileInput) {
   return new Promise((resolve) => {
@@ -507,15 +520,23 @@ async function submitAddEntry() {
   const plate = document.getElementById('addPlate').value.trim();
   const insurance = document.getElementById('addInsurance').value.trim();
   const policyNo = document.getElementById('addPolicyNo').value.trim();
-  const startDate = document.getElementById('addStartDate').value;
-  const endDate = document.getElementById('addEndDate').value;
+  const startDate = getFpValue('addStartDate');
+  const endDate = getFpValue('addEndDate');
   const amount = document.getElementById('addAmount').value;
   const phone = document.getElementById('addPhone').value.trim();
   const notes = document.getElementById('addNotes').value.trim();
-  const dob = document.getElementById('addDob').value;
+  const dob = getFpValue('addDob');
   
-  if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
-    showToast("Please fill in all mandatory (*) fields!", true);
+  const missing = [];
+  if (!name) missing.push("Client Name");
+  if (!vehicle) missing.push("Vehicle Model");
+  if (!plate) missing.push("Number Plate");
+  if (!insurance) missing.push("Insurance Provider");
+  if (!endDate) missing.push("Expiry Date");
+  if (!phone) missing.push("Phone Number");
+  
+  if (missing.length > 0) {
+    showToast(`Missing mandatory (*) fields: ${missing.join(', ')}`, true);
     return;
   }
   
@@ -657,15 +678,23 @@ async function submitEditEntry() {
   const plate = document.getElementById('editPlate').value.trim();
   const insurance = document.getElementById('editInsurance').value.trim();
   const policyNo = document.getElementById('editPolicyNo').value.trim();
-  const startDate = document.getElementById('editStartDate').value;
-  const endDate = document.getElementById('editEndDate').value;
+  const startDate = getFpValue('editStartDate');
+  const endDate = getFpValue('editEndDate');
   const amount = document.getElementById('editAmount').value;
   const phone = document.getElementById('editPhone').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
-  const dob = document.getElementById('editDob').value;
+  const dob = getFpValue('editDob');
   
-  if (!name || !vehicle || !plate || !insurance || !endDate || !phone) {
-    showToast("Please fill in all mandatory fields!", true);
+  const missing = [];
+  if (!name) missing.push("Client Name");
+  if (!vehicle) missing.push("Vehicle Model");
+  if (!plate) missing.push("Number Plate");
+  if (!insurance) missing.push("Insurance Provider");
+  if (!endDate) missing.push("Expiry Date");
+  if (!phone) missing.push("Phone Number");
+  
+  if (missing.length > 0) {
+    showToast(`Missing mandatory (*) fields: ${missing.join(', ')}`, true);
     return;
   }
   
