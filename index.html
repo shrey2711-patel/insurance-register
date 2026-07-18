@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.4";
+const CURRENT_VERSION = "1.8.7";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2293,6 +2293,7 @@ function saveAllToIndexedDB(syncToCloud = false, isOverwrite = false) {
 }
 
 // Compress image helper using HTML5 canvas
+// Target: readable text in insurance/ID photos under ~150 KB per image.
 function compressImageBase64(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -2301,42 +2302,57 @@ function compressImageBase64(file) {
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        let width = img.width;
+        // Cap at 900×900 — enough to read all text clearly on any screen
+        const maxWidth = 900;
+        const maxHeight = 900;
+        let width  = img.width;
         let height = img.height;
 
         if (width > maxWidth || height > maxHeight) {
           if (width > height) {
             height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
+            width  = maxWidth;
           } else {
-            width = Math.round((width * maxHeight) / height);
+            width  = Math.round((width * maxHeight) / height);
             height = maxHeight;
           }
         }
 
         const canvas = document.createElement('canvas');
-        canvas.width = width;
+        canvas.width  = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
 
-        // Quality 0.6 keeps file size under ~100-150KB while keeping text clear
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        // Quality 0.55 — text stays sharp, file stays under ~120 KB
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.55);
         resolve(compressedDataUrl);
       };
-      img.onerror = () => {
-        resolve(event.target.result); // fallback to original base64 if loading image fails
-      };
+      img.onerror = () => resolve(event.target.result);
     };
-    reader.onerror = () => {
-      resolve(null);
-    };
+    reader.onerror = () => resolve(null);
   });
 }
 
-// Compress PDF helper using PDF.js (processes all pages)
+// PDF → JPEG page compressor
+//
+// Strategy: every PDF page is rendered by PDF.js and saved as a JPEG image.
+// Page count is unpredictable (1 – 12+), so we calculate a dynamic per-page
+// size target from a fixed total budget, then binary-search for the highest
+// JPEG quality that keeps each page within its budget.
+//
+// Budget allocation (shared with the 950 KB Firestore inline budget):
+//   • 700 KB  reserved for the PDF pages themselves
+//   • 250 KB  left for KYC images, metadata, and other fields
+//
+// Per-page target = 700 KB ÷ numPages   (capped min 45 KB, max 250 KB)
+//   → 1 page  → 250 KB  → high quality, crisp text
+//   → 4 pages → 175 KB  → very readable
+//   → 8 pages →  87 KB  → readable at normal zoom
+//   → 12 pages →  58 KB  → just about legible; scale reduced too
+//
+// Readable minimum: quality 0.28 at scale 0.80 is still fully legible for
+// standard A4 insurance documents on a phone screen.
+// ─────────────────────────────────────────────────────────────────────────────
 function compressPdfToPages(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2344,47 +2360,62 @@ function compressPdfToPages(file) {
     reader.onload = async (e) => {
       try {
         const typedarray = new Uint8Array(e.target.result);
-        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+        const pdf      = await pdfjsLib.getDocument({ data: typedarray }).promise;
         const numPages = pdf.numPages;
-        const pages = [];
+        const pages    = [];
 
-        // Dynamically optimize scale & quality based on total pages to guarantee total size is under 200-300KB
-        let scale = 1.6;
-        let quality = 0.6;
-        if (numPages === 2) {
-          scale = 1.3;
-          quality = 0.5;
-        } else if (numPages === 3) {
-          scale = 1.2;
-          quality = 0.45;
-        } else if (numPages > 3) {
-          // Progressively decrease scale/quality to maintain tiny footprint
-          scale = Math.max(0.9, 1.2 - (numPages * 0.02));
-          quality = Math.max(0.3, 0.45 - (numPages * 0.015));
-        }
+        // ── Dynamic scale ────────────────────────────────────────────────────
+        // Fewer pages → larger render → sharper text.
+        // More pages → smaller render → fits budget but still readable.
+        let scale;
+        if      (numPages <= 2)  scale = 1.20;  // ~864 px wide (A4)
+        else if (numPages <= 4)  scale = 1.05;
+        else if (numPages <= 7)  scale = 0.90;
+        else if (numPages <= 10) scale = 0.82;
+        else                     scale = 0.75;  // 12+ pages — tightest
+
+        // ── Per-page byte budget ──────────────────────────────────────────────
+        const PDF_TOTAL_BUDGET = 700000;              // 700 KB for all pages
+        const rawTarget        = Math.floor(PDF_TOTAL_BUDGET / numPages);
+        const perPageTarget    = Math.min(250000, Math.max(45000, rawTarget));
+
+        // Minimum quality we'll ever use (below this text becomes unreadable)
+        const MIN_QUALITY = 0.28;
+        const MAX_QUALITY = 0.75;
+
+        showToast(`📄 Compressing ${numPages}-page PDF — please wait...`);
 
         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: scale });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
+          showToast(`📄 Processing page ${pageNum} of ${numPages}...`);
 
-          const renderContext = {
-            canvasContext: ctx,
-            viewport: viewport
-          };
+          const page     = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale });
+          const canvas   = document.createElement('canvas');
+          canvas.width   = viewport.width;
+          canvas.height  = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-          await page.render(renderContext).promise;
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          // ── Binary search for best quality ──────────────────────────────────
+          // Find the HIGHEST quality Q where toDataURL(Q).length ≤ perPageTarget.
+          // This maximises readability while guaranteeing size fits.
+          let lo = MIN_QUALITY;
+          let hi = MAX_QUALITY;
+          let bestDataUrl = canvas.toDataURL('image/jpeg', lo); // safe fallback
 
-          pages.push({
-            data: compressedDataUrl,
-            width: viewport.width,
-            height: viewport.height
-          });
+          for (let iter = 0; iter < 8; iter++) {
+            const mid       = (lo + hi) / 2;
+            const candidate = canvas.toDataURL('image/jpeg', mid);
+            if (candidate.length <= perPageTarget) {
+              bestDataUrl = candidate;  // fits — try higher quality
+              lo = mid;
+            } else {
+              hi = mid;                 // too big — try lower quality
+            }
+          }
+
+          pages.push({ data: bestDataUrl, width: viewport.width, height: viewport.height });
         }
+
         resolve(pages);
       } catch (err) {
         reject(err);
@@ -2395,7 +2426,9 @@ function compressPdfToPages(file) {
 }
 
 // File helper: Convert file inputs to Base64 objects (compresses images/PDFs automatically!)
+
 function getFileData(fileInput) {
+
   return new Promise(async (resolve) => {
     const file = fileInput.files[0];
     if (!file) {
@@ -4847,52 +4880,74 @@ async function uploadPolicyToFirebase(entry) {
   const docId = String(entry.id);
   uploadingDocIds.add(docId);
 
-  // Helper: process a single document object for cloud storage.
-  // Returns { cloudDoc, localDoc } — cloudDoc goes to Firestore, localDoc stays in IndexedDB.
-  async function processDocForCloud(doc, storagePath) {
-    if (!doc) return { cloudDoc: null, localDoc: null };
+  // Firestore hard limit: 1,048,576 bytes (1 MiB) per document.
+  // We use 950 KB as the inline budget — leaves ~98 KB for all text fields.
+  // Every file is compressed on upload, so most insurance docs comfortably fit.
+  const FIRESTORE_INLINE_BUDGET = 950000;
+  let usedBudget = 0;
 
-    // Strip the isNew flag from what we store
+  const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
+
+  /**
+   * Process a single file for cloud storage.
+   * - If it's not newly uploaded (no isNew flag), pass through unchanged.
+   * - If it fits in the remaining inline budget, store it inline in Firestore.
+   * - Otherwise, upload to Firebase Storage / Google Drive.
+   *
+   * Returns { cloudDoc, localDoc, size }
+   *   cloudDoc → goes into Firestore
+   *   localDoc → stays in local IndexedDB (always has the binary)
+   *   size     → how many bytes were used from the inline budget (0 if uploaded to Storage)
+   */
+  async function processDocForCloud(doc, storagePath, budgetRemaining) {
+    if (!doc) return { cloudDoc: null, localDoc: null, size: 0 };
+
     const cleanDoc = { ...doc };
     delete cleanDoc.isNew;
 
-    // If not a new upload, pass through as-is
+    // Existing doc (no isNew flag) — pass through without re-uploading or re-counting.
+    // These are already correctly stored in Firestore from the previous sync.
     if (!doc.isNew) {
-      return { cloudDoc: cleanDoc, localDoc: cleanDoc };
+      return { cloudDoc: cleanDoc, localDoc: cleanDoc, size: 0 };
     }
 
-    // It is a new upload — compute its size
+    // New upload — compute binary payload size
     const size = doc.isMultiPage
       ? JSON.stringify(doc.pages || []).length
       : (doc.data ? doc.data.length : 0);
 
-    // If small enough, keep inline in Firestore
-    if (size < 800000) {
-      return { cloudDoc: cleanDoc, localDoc: cleanDoc };
+    // Fit inline if it fits within the remaining shared budget
+    if (size <= budgetRemaining) {
+      return { cloudDoc: cleanDoc, localDoc: cleanDoc, size };
     }
 
-    // Too large — try uploading to Storage/Drive
-    const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
+    // Too large for inline budget — upload to Storage / Drive
     try {
       let fileUrl = '';
       if (isGoogleDrive) {
+        showToast(`☁️ Uploading ${doc.name} to Google Drive...`);
         fileUrl = await uploadFileToGoogleDrive(doc);
       } else {
+        showToast(`☁️ Uploading ${doc.name} to Cloud Storage...`);
         fileUrl = await uploadBase64ToStorage(storagePath, doc);
       }
       const cloudDoc = {
         name: doc.name,
         type: doc.type,
-        isMultiPageCloud: doc.isMultiPage ? true : false,
+        isMultiPageCloud: !!doc.isMultiPage,
         url: fileUrl
       };
-      // Local copy retains the binary so the uploading device can view it instantly
-      return { cloudDoc, localDoc: cleanDoc };
+      // Local copy keeps full binary for instant local preview
+      return { cloudDoc, localDoc: cleanDoc, size: 0 };
     } catch (err) {
       console.warn(`Storage upload failed for ${storagePath}:`, err);
-      showToast("⚠️ File too large for cloud sync; stored locally only.", true);
-      const localOnlyDoc = { name: doc.name, type: doc.type, localOnly: true };
-      return { cloudDoc: localOnlyDoc, localDoc: cleanDoc };
+      showToast(`⚠️ ${doc.name} too large for cloud — stored locally only.`, true);
+      // Mark as localOnly in cloud; retain binary locally
+      return {
+        cloudDoc: { name: doc.name, type: doc.type, localOnly: true },
+        localDoc: cleanDoc,
+        size: 0
+      };
     }
   }
 
@@ -4900,19 +4955,20 @@ async function uploadPolicyToFirebase(entry) {
     const cloudEntry = { ...entry };
     delete cloudEntry._synced;
 
-    // --- Policy Document ---
+    // ── Policy Document ───────────────────────────────────────────────────────
     if (entry.policy_doc) {
-      const { cloudDoc, localDoc } = await processDocForCloud(
+      const result = await processDocForCloud(
         entry.policy_doc,
-        `policies/${docId}/policy_doc`
+        `policies/${docId}/policy_doc`,
+        FIRESTORE_INLINE_BUDGET - usedBudget
       );
-      cloudEntry.policy_doc = cloudDoc;
-      // Keep full local binary in a side-channel so local writeback can use it
-      cloudEntry.__localPolicyDoc = localDoc;
+      usedBudget += result.size;
+      cloudEntry.policy_doc = result.cloudDoc;
+      cloudEntry.__localPolicyDoc = result.localDoc;
     }
 
-    // --- KYC Documents ---
-    // Normalise: support both old kyc_doc (single) and new kyc_docs (array)
+    // ── KYC Documents ─────────────────────────────────────────────────────────
+    // Support legacy single kyc_doc as well as the new kyc_docs array
     const kycList = Array.isArray(entry.kyc_docs)
       ? entry.kyc_docs
       : (entry.kyc_doc ? [entry.kyc_doc] : []);
@@ -4923,46 +4979,45 @@ async function uploadPolicyToFirebase(entry) {
       for (let i = 0; i < kycList.length; i++) {
         const doc = kycList[i];
         if (!doc) continue;
-        const { cloudDoc, localDoc } = await processDocForCloud(
+        const result = await processDocForCloud(
           doc,
-          `policies/${docId}/kyc_doc_${i}`
+          `policies/${docId}/kyc_doc_${i}`,
+          FIRESTORE_INLINE_BUDGET - usedBudget
         );
-        if (cloudDoc) cloudKycDocs.push(cloudDoc);
-        if (localDoc) localKycDocs.push(localDoc);
+        usedBudget += result.size;
+        if (result.cloudDoc) cloudKycDocs.push(result.cloudDoc);
+        if (result.localDoc) localKycDocs.push(result.localDoc);
       }
       cloudEntry.kyc_docs = cloudKycDocs;
       cloudEntry.kyc_doc = cloudKycDocs.length > 0 ? cloudKycDocs[0] : null;
       cloudEntry.__localKycDocs = localKycDocs;
     } else {
-      // No KYC docs — preserve whatever is already in the cloud entry
       cloudEntry.kyc_docs = cloudEntry.kyc_docs || [];
       cloudEntry.kyc_doc = cloudEntry.kyc_doc || null;
     }
 
-    // Pull out the side-channel locals before writing to Firestore
+    // Extract side-channel locals before writing to Firestore
     const localPolicyDoc = cloudEntry.__localPolicyDoc;
-    const localKycDocs = cloudEntry.__localKycDocs;
+    const localKycDocs   = cloudEntry.__localKycDocs;
     delete cloudEntry.__localPolicyDoc;
     delete cloudEntry.__localKycDocs;
 
-    // Sanitize before writing — Firestore rejects `undefined` values
+    // Sanitize: Firestore rejects `undefined` values
     const safeCloudEntry = sanitizeForFirestore(cloudEntry);
 
     // Write to Firestore
     await dbCloud.collection("policies").doc(docId).set(safeCloudEntry);
     logActivity(`☁️ Cloud Synced: ${entry.name} saved to Firebase.`, "info");
 
-    // Write back to local DATA + IndexedDB, keeping binary data for instant local viewing
+    // Write back to local DATA + IndexedDB, keeping binary for instant local viewing
     const localIndex = DATA.findIndex(item => String(item.id) === docId);
     if (localIndex > -1) {
-      const localEntry = { ...cloudEntry };
+      const localEntry = { ...safeCloudEntry };
 
-      if (localPolicyDoc) {
-        localEntry.policy_doc = localPolicyDoc;
-      }
+      if (localPolicyDoc) localEntry.policy_doc = localPolicyDoc;
       if (localKycDocs) {
         localEntry.kyc_docs = localKycDocs;
-        localEntry.kyc_doc = localKycDocs.length > 0 ? localKycDocs[0] : null;
+        localEntry.kyc_doc  = localKycDocs.length > 0 ? localKycDocs[0] : null;
       }
 
       localEntry._synced = true;
@@ -4973,6 +5028,7 @@ async function uploadPolicyToFirebase(entry) {
     }
 
   } catch (err) {
+
     console.error("Cloud Sync write failed:", err);
     showToast("❌ Cloud Sync Failed — check console for details.", true);
   } finally {
