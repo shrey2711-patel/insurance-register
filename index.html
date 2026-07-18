@@ -1774,7 +1774,6 @@
     </div>
     <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-secondary" id="btnDownloadZip" onclick="downloadAllPagesAsZip()"><i class="fa-solid fa-file-zipper" style="color:var(--purple);"></i> Download ZIP (All Pages)</button>
         <button class="btn btn-primary" id="btnDownloadPdf" onclick="downloadAllPagesAsPdf()"><i class="fa-solid fa-file-pdf"></i> Download PDF (All Pages)</button>
       </div>
       <button class="btn btn-secondary" onclick="closeModal('documentViewerModal')">Close</button>
@@ -1916,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.6.1";
+const CURRENT_VERSION = "1.6.3";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2648,8 +2647,18 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
   try {
     let pagesToRender = [];
     
+    // Case 0: Multi-page document stored in cloud as JSON
+    if (doc.isMultiPageCloud && doc.url) {
+      showToast("☁️ Loading pages from cloud...");
+      const response = await fetch(doc.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch cloud pages: ${response.statusText}`);
+      }
+      pagesToRender = await response.json();
+      currentViewerDoc.pages = pagesToRender;
+    }
     // Case 1: Pre-rendered multi-page pages array
-    if (doc.pages && doc.pages.length > 0) {
+    else if (doc.pages && doc.pages.length > 0) {
       pagesToRender = doc.pages;
     } 
     // Case 2: Base64 image
@@ -2707,8 +2716,7 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
           </a>
         </div>
       `;
-      // Disable ZIP/PDF download buttons since it's a cloud link
-      document.getElementById('btnDownloadZip').style.display = 'none';
+      // Disable PDF download button since it's a cloud link
       document.getElementById('btnDownloadPdf').style.display = 'none';
       return;
     }
@@ -2718,8 +2726,7 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
       throw new Error("No pages found or could not render document.");
     }
     
-    // Enable zip/pdf buttons
-    document.getElementById('btnDownloadZip').style.display = 'inline-flex';
+    // Enable PDF download button
     document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
     
     pagesContainer.innerHTML = pagesToRender.map((page, pIdx) => `
@@ -2761,6 +2768,15 @@ async function showCombinedKycViewer(docs, clientName) {
       let pages = [];
       if (doc.pages && doc.pages.length > 0) {
         pages = doc.pages;
+      } else if (doc.isMultiPageCloud && doc.url) {
+        try {
+          const response = await fetch(doc.url);
+          if (response.ok) {
+            pages = await response.json();
+          }
+        } catch (fetchErr) {
+          console.warn("Failed to fetch cloud KYC pages:", fetchErr);
+        }
       } else if (doc.data && (doc.data.startsWith('data:image/') || doc.type.startsWith('image/'))) {
         pages = [{ data: doc.data, width: 800, height: 600 }];
       } else if (doc.data && (doc.data.startsWith('data:application/pdf') || doc.type === 'application/pdf')) {
@@ -2806,10 +2822,8 @@ async function showCombinedKycViewer(docs, clientName) {
     };
     
     if (currentViewerDoc.pages.length > 0) {
-      document.getElementById('btnDownloadZip').style.display = 'inline-flex';
       document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
     } else {
-      document.getElementById('btnDownloadZip').style.display = 'none';
       document.getElementById('btnDownloadPdf').style.display = 'none';
     }
     
@@ -4681,7 +4695,11 @@ async function uploadPolicyToFirebase(entry) {
     const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
     
     // Upload Policy PDF
-    if (entry.policy_doc && entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) {
+    const hasPolicyDoc = entry.policy_doc && (
+      (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
+      (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url)
+    );
+    if (hasPolicyDoc) {
       try {
         if (isGoogleDrive) {
           showToast("☁️ Uploading Policy PDF to Google Drive...");
@@ -4689,6 +4707,7 @@ async function uploadPolicyToFirebase(entry) {
           cloudEntry.policy_doc = {
             name: entry.policy_doc.name,
             type: entry.policy_doc.type,
+            isMultiPageCloud: true,
             url: fileUrl
           };
         } else {
@@ -4697,14 +4716,17 @@ async function uploadPolicyToFirebase(entry) {
           cloudEntry.policy_doc = {
             name: entry.policy_doc.name,
             type: entry.policy_doc.type,
+            isMultiPageCloud: true,
             url: fileUrl
           };
         }
       } catch(err) {
         console.warn("Storage upload failed, handling fallback for Policy PDF:", err);
-        // If the file is small (under 300,000 chars base64, ~220KB), save inline to Firestore.
-        // Else, mark as localOnly to stay under 1MB Firestore limit.
-        if (entry.policy_doc.data.length < 300000) {
+        const sizeToCheck = entry.policy_doc.isMultiPage
+          ? JSON.stringify(entry.policy_doc.pages).length
+          : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
+          
+        if (sizeToCheck < 300000) {
           cloudEntry.policy_doc = entry.policy_doc;
         } else {
           cloudEntry.policy_doc = {
@@ -4724,7 +4746,10 @@ async function uploadPolicyToFirebase(entry) {
         const uploadedDocs = [];
         for (let i = 0; i < entry.kyc_docs.length; i++) {
           const doc = entry.kyc_docs[i];
-          if (doc.data && doc.data.startsWith('data:')) {
+          const hasKycDocData = (doc.data && doc.data.startsWith('data:')) ||
+            (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
+            
+          if (hasKycDocData) {
             try {
               let fileUrl = '';
               if (isGoogleDrive) {
@@ -4735,12 +4760,17 @@ async function uploadPolicyToFirebase(entry) {
               uploadedDocs.push({
                 name: doc.name,
                 type: doc.type,
+                isMultiPageCloud: true,
                 url: fileUrl
               });
             } catch(storageErr) {
               console.warn(`Storage upload failed for KYC doc ${i}:`, storageErr);
-              if (doc.data.length < 300000) {
-                uploadedDocs.push(doc); // save small base64 directly
+              const sizeToCheck = doc.isMultiPage
+                ? JSON.stringify(doc.pages).length
+                : (doc.data ? doc.data.length : 0);
+                
+              if (sizeToCheck < 300000) {
+                uploadedDocs.push(doc);
               } else {
                 uploadedDocs.push({
                   name: doc.name,
@@ -4751,7 +4781,7 @@ async function uploadPolicyToFirebase(entry) {
               }
             }
           } else {
-            uploadedDocs.push(doc); // preserve existing (e.g. url or localOnly)
+            uploadedDocs.push(doc);
           }
         }
         cloudEntry.kyc_docs = uploadedDocs;
@@ -4761,8 +4791,15 @@ async function uploadPolicyToFirebase(entry) {
         const fallbackDocs = [];
         for (let i = 0; i < entry.kyc_docs.length; i++) {
           const doc = entry.kyc_docs[i];
-          if (doc.data && doc.data.startsWith('data:')) {
-            if (doc.data.length < 300000) {
+          const hasKycDocData = (doc.data && doc.data.startsWith('data:')) ||
+            (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
+            
+          if (hasKycDocData) {
+            const sizeToCheck = doc.isMultiPage
+              ? JSON.stringify(doc.pages).length
+              : (doc.data ? doc.data.length : 0);
+              
+            if (sizeToCheck < 300000) {
               fallbackDocs.push(doc);
             } else {
               fallbackDocs.push({
@@ -4797,10 +4834,21 @@ async function uploadFileToGoogleDrive(doc) {
     throw new Error("Google Apps Script Web App URL is not configured.");
   }
   
+  let base64 = doc.data;
+  let mimeType = doc.type;
+  let fileName = doc.name;
+  
+  if (doc.isMultiPage || doc.pages) {
+    const jsonStr = JSON.stringify(doc.pages);
+    base64 = 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(jsonStr)));
+    mimeType = 'application/json';
+    fileName = doc.name.substring(0, doc.name.lastIndexOf('.')) + '_pages.json';
+  }
+  
   const payload = {
-    base64: doc.data,
-    mimeType: doc.type,
-    fileName: doc.name,
+    base64: base64,
+    mimeType: mimeType,
+    fileName: fileName,
     folderId: folderId
   };
   
@@ -4832,16 +4880,25 @@ function uploadBase64ToStorage(path, doc) {
       return;
     }
     const storageRef = storageCloud.ref().child(path);
-    const parts = doc.data.split(',');
-    const base64Data = parts[1];
-    const mime = doc.type || 'application/octet-stream';
+    let blob;
+    let mime;
     
-    const binary = atob(base64Data);
-    const array = [];
-    for (let i = 0; i < binary.length; i++) {
-      array.push(binary.charCodeAt(i));
+    if (doc.isMultiPage || doc.pages) {
+      const jsonStr = JSON.stringify(doc.pages);
+      mime = 'application/json';
+      blob = new Blob([jsonStr], { type: mime });
+    } else {
+      const parts = doc.data.split(',');
+      const base64Data = parts[1];
+      mime = doc.type || 'application/octet-stream';
+      
+      const binary = atob(base64Data);
+      const array = [];
+      for (let i = 0; i < binary.length; i++) {
+        array.push(binary.charCodeAt(i));
+      }
+      blob = new Blob([new Uint8Array(array)], { type: mime });
     }
-    const blob = new Blob([new Uint8Array(array)], { type: mime });
     
     const uploadTask = storageRef.put(blob);
     uploadTask.on('state_changed', 
