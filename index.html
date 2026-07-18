@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.1";
+const CURRENT_VERSION = "1.8.2";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2405,7 +2405,8 @@ function getFileData(fileInput) {
       resolve({
         name: file.name,
         type: 'image/jpeg',
-        data: compressedData
+        data: compressedData,
+        isNew: true
       });
       return;
     }
@@ -2420,7 +2421,8 @@ function getFileData(fileInput) {
           name: file.name,
           type: 'application/pdf',
           isMultiPage: true,
-          pages: pages
+          pages: pages,
+          isNew: true
         });
         return;
       } catch (err) {
@@ -2441,7 +2443,8 @@ function getFileData(fileInput) {
       resolve({
         name: file.name,
         type: file.type,
-        data: e.target.result // Base64 data URL
+        data: e.target.result, // Base64 data URL
+        isNew: true
       });
     };
     reader.onerror = function() {
@@ -2478,7 +2481,8 @@ function getMultipleFilesData(fileInput) {
             name: file.name,
             type: 'application/pdf',
             isMultiPage: true,
-            pages: pages
+            pages: pages,
+            isNew: true
           });
           continue;
         } catch (err) {
@@ -2513,7 +2517,8 @@ function getMultipleFilesData(fileInput) {
         results.push({
           name: finalName,
           type: finalType,
-          data: docData
+          data: docData,
+          isNew: true
         });
       }
     }
@@ -4828,57 +4833,57 @@ async function uploadPolicyToFirebase(entry) {
 
     // Upload Policy PDF
     if (entry.policy_doc) {
-      const sizeToCheck = entry.policy_doc.isMultiPage
-        ? JSON.stringify(entry.policy_doc.pages).length
-        : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
+      const doc = entry.policy_doc;
+      const sizeToCheck = doc.isMultiPage
+        ? JSON.stringify(doc.pages).length
+        : (doc.data ? doc.data.length : 0);
 
       // Keep inline only if it is under 800KB
       const isInline = sizeToCheck < 800000;
-      const isNewUpload = (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
-        (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url);
+      const isNewUpload = !!doc.isNew;
 
       if (isNewUpload) {
         if (isInline) {
           // Keep it inline in the database to avoid Storage CORS issues and save space
-          cloudEntry.policy_doc = entry.policy_doc;
+          const cleanDoc = { ...doc };
+          delete cleanDoc.isNew;
+          cloudEntry.policy_doc = cleanDoc;
           totalInlineSize += sizeToCheck;
         } else {
           // If it exceeds 800KB, upload to Storage/Drive
           try {
+            let fileUrl = '';
             if (isGoogleDrive) {
               showToast("☁️ Uploading Policy PDF to Google Drive...");
-              const fileUrl = await uploadFileToGoogleDrive(entry.policy_doc);
-              cloudEntry.policy_doc = {
-                name: entry.policy_doc.name,
-                type: entry.policy_doc.type,
-                isMultiPageCloud: entry.policy_doc.isMultiPage ? true : false,
-                url: fileUrl
-              };
+              fileUrl = await uploadFileToGoogleDrive(doc);
             } else {
               showToast("☁️ Uploading Policy PDF to Cloud Storage...");
-              const fileUrl = await uploadBase64ToStorage(`policies/${docId}/policy_doc`, entry.policy_doc);
-              cloudEntry.policy_doc = {
-                name: entry.policy_doc.name,
-                type: entry.policy_doc.type,
-                isMultiPageCloud: entry.policy_doc.isMultiPage ? true : false,
-                url: fileUrl
-              };
+              fileUrl = await uploadBase64ToStorage(`policies/${docId}/policy_doc`, doc);
             }
+            cloudEntry.policy_doc = {
+              name: doc.name,
+              type: doc.type,
+              isMultiPageCloud: doc.isMultiPage ? true : false,
+              url: fileUrl
+            };
           } catch(err) {
             console.warn("Storage upload failed, handling fallback for Policy PDF:", err);
             cloudEntry.policy_doc = {
-              name: entry.policy_doc.name,
-              type: entry.policy_doc.type,
+              name: doc.name,
+              type: doc.type,
               localOnly: true
             };
             showToast("⚠️ Policy PDF too large for free cloud sync; stored locally on this device.", true);
           }
         }
       } else {
-        if (entry.policy_doc.pages) {
-          totalInlineSize += JSON.stringify(entry.policy_doc.pages).length;
-        } else if (entry.policy_doc.data) {
-          totalInlineSize += entry.policy_doc.data.length;
+        const cleanDoc = { ...doc };
+        delete cleanDoc.isNew;
+        cloudEntry.policy_doc = cleanDoc;
+        if (cleanDoc.pages) {
+          totalInlineSize += JSON.stringify(cleanDoc.pages).length;
+        } else if (cleanDoc.data) {
+          totalInlineSize += cleanDoc.data.length;
         }
       }
     }
@@ -4900,12 +4905,13 @@ async function uploadPolicyToFirebase(entry) {
 
           // Save inline only if the cumulative inline size stays under 800KB
           const isInline = (totalInlineSize + sizeToCheck) < 800000;
-          const isNewUpload = (doc.data && doc.data.startsWith('data:')) ||
-            (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
+          const isNewUpload = !!doc.isNew;
 
           if (isNewUpload) {
             if (isInline) {
-              uploadedDocs.push(doc); // Save inline in database
+              const cleanDoc = { ...doc };
+              delete cleanDoc.isNew;
+              uploadedDocs.push(cleanDoc); // Save inline in database
               totalInlineSize += sizeToCheck;
             } else {
               try {
@@ -4932,12 +4938,14 @@ async function uploadPolicyToFirebase(entry) {
               }
             }
           } else {
-            if (doc.pages) {
-              totalInlineSize += JSON.stringify(doc.pages).length;
-            } else if (doc.data) {
-              totalInlineSize += doc.data.length;
+            const cleanDoc = { ...doc };
+            delete cleanDoc.isNew;
+            if (cleanDoc.pages) {
+              totalInlineSize += JSON.stringify(cleanDoc.pages).length;
+            } else if (cleanDoc.data) {
+              totalInlineSize += cleanDoc.data.length;
             }
-            uploadedDocs.push(doc); // Preserve existing URL or inline item
+            uploadedDocs.push(cleanDoc); // Preserve existing URL or inline item
           }
         }
         cloudEntry.kyc_docs = uploadedDocs;
@@ -4954,7 +4962,9 @@ async function uploadPolicyToFirebase(entry) {
             : (doc.data ? doc.data.length : 0);
 
           if (sizeToCheck < 800000) {
-            fallbackDocs.push(doc);
+            const cleanDoc = { ...doc };
+            delete cleanDoc.isNew;
+            fallbackDocs.push(cleanDoc);
           } else {
             fallbackDocs.push({
               name: doc.name,
@@ -4982,6 +4992,7 @@ async function uploadPolicyToFirebase(entry) {
           data: entry.policy_doc.data || cloudEntry.policy_doc.data,
           pages: entry.policy_doc.pages || cloudEntry.policy_doc.pages
         };
+        delete localEntry.policy_doc.isNew;
       }
       
       if (Array.isArray(entry.kyc_docs)) {
@@ -4989,11 +5000,13 @@ async function uploadPolicyToFirebase(entry) {
           if (!cloudKyc) return cloudKyc;
           const originalKyc = entry.kyc_docs[kIdx];
           if (originalKyc) {
-            return {
+            const mergedKyc = {
               ...cloudKyc,
               data: originalKyc.data || cloudKyc.data,
               pages: originalKyc.pages || cloudKyc.pages
             };
+            delete mergedKyc.isNew;
+            return mergedKyc;
           }
           return cloudKyc;
         });
