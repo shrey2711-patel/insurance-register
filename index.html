@@ -2709,17 +2709,22 @@ function downloadAllPagesAsPdf() {
   }
 }
 
-// File helper: open the viewer modal for documents
+// File helper: download/open base64 and cloud documents safely in client-side
 function downloadDoc(idx, type) {
   const item = DATA[idx];
   if (type === 'policy') {
     const doc = item.policy_doc;
     if (!doc) return;
-    loadAndShowDocumentInViewer(doc, item.name);
+    triggerFileDownload(doc, item.name);
   } else {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
-    showCombinedKycViewer(docs, item.name);
+
+    docs.forEach((doc, dIdx) => {
+      setTimeout(() => {
+        triggerFileDownload(doc, item.name);
+      }, dIdx * 350);
+    });
   }
 }
 
