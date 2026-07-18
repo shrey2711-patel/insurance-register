@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.6.4";
+const CURRENT_VERSION = "1.7.0";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4732,46 +4732,50 @@ async function uploadPolicyToFirebase(entry) {
     const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
     
     // Upload Policy PDF
-    const hasPolicyDoc = entry.policy_doc && (
-      (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
-      (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url)
-    );
-    if (hasPolicyDoc) {
-      try {
-        if (isGoogleDrive) {
-          showToast("☁️ Uploading Policy PDF to Google Drive...");
-          const fileUrl = await uploadFileToGoogleDrive(entry.policy_doc);
-          cloudEntry.policy_doc = {
-            name: entry.policy_doc.name,
-            type: entry.policy_doc.type,
-            isMultiPageCloud: true,
-            url: fileUrl
-          };
-        } else {
-          showToast("☁️ Uploading Policy PDF to Cloud Storage...");
-          const fileUrl = await uploadBase64ToStorage(`policies/${docId}/policy_doc`, entry.policy_doc);
-          cloudEntry.policy_doc = {
-            name: entry.policy_doc.name,
-            type: entry.policy_doc.type,
-            isMultiPageCloud: true,
-            url: fileUrl
-          };
-        }
-      } catch(err) {
-        console.warn("Storage upload failed, handling fallback for Policy PDF:", err);
-        const sizeToCheck = entry.policy_doc.isMultiPage
-          ? JSON.stringify(entry.policy_doc.pages).length
-          : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
-          
-        if (sizeToCheck < 300000) {
+    if (entry.policy_doc) {
+      const sizeToCheck = entry.policy_doc.isMultiPage
+        ? JSON.stringify(entry.policy_doc.pages).length
+        : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
+        
+      const isInline = sizeToCheck < 800000;
+      const isNewUpload = (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
+        (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url);
+        
+      if (isNewUpload) {
+        if (isInline) {
+          // Keep it inline in the database to avoid Storage CORS issues and save space
           cloudEntry.policy_doc = entry.policy_doc;
         } else {
-          cloudEntry.policy_doc = {
-            name: entry.policy_doc.name,
-            type: entry.policy_doc.type,
-            localOnly: true
-          };
-          showToast("⚠️ Policy PDF too large for free cloud sync; stored locally on this device.", true);
+          // If it exceeds 800KB, upload to Storage/Drive
+          try {
+            if (isGoogleDrive) {
+              showToast("☁️ Uploading Policy PDF to Google Drive...");
+              const fileUrl = await uploadFileToGoogleDrive(entry.policy_doc);
+              cloudEntry.policy_doc = {
+                name: entry.policy_doc.name,
+                type: entry.policy_doc.type,
+                isMultiPageCloud: true,
+                url: fileUrl
+              };
+            } else {
+              showToast("☁️ Uploading Policy PDF to Cloud Storage...");
+              const fileUrl = await uploadBase64ToStorage(`policies/${docId}/policy_doc`, entry.policy_doc);
+              cloudEntry.policy_doc = {
+                name: entry.policy_doc.name,
+                type: entry.policy_doc.type,
+                isMultiPageCloud: true,
+                url: fileUrl
+              };
+            }
+          } catch(err) {
+            console.warn("Storage upload failed, handling fallback for Policy PDF:", err);
+            cloudEntry.policy_doc = {
+              name: entry.policy_doc.name,
+              type: entry.policy_doc.type,
+              localOnly: true
+            };
+            showToast("⚠️ Policy PDF too large for free cloud sync; stored locally on this device.", true);
+          }
         }
       }
     }
@@ -4779,36 +4783,36 @@ async function uploadPolicyToFirebase(entry) {
     // Upload KYC Documents
     if (Array.isArray(entry.kyc_docs) && entry.kyc_docs.length > 0) {
       try {
-        showToast("☁️ Uploading KYC Documents...");
         const uploadedDocs = [];
         for (let i = 0; i < entry.kyc_docs.length; i++) {
           const doc = entry.kyc_docs[i];
-          const hasKycDocData = (doc.data && doc.data.startsWith('data:')) ||
+          const sizeToCheck = doc.isMultiPage
+            ? JSON.stringify(doc.pages).length
+            : (doc.data ? doc.data.length : 0);
+            
+          const isInline = sizeToCheck < 800000;
+          const isNewUpload = (doc.data && doc.data.startsWith('data:')) ||
             (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
             
-          if (hasKycDocData) {
-            try {
-              let fileUrl = '';
-              if (isGoogleDrive) {
-                fileUrl = await uploadFileToGoogleDrive(doc);
-              } else {
-                fileUrl = await uploadBase64ToStorage(`policies/${docId}/kyc_doc_${i}`, doc);
-              }
-              uploadedDocs.push({
-                name: doc.name,
-                type: doc.type,
-                isMultiPageCloud: true,
-                url: fileUrl
-              });
-            } catch(storageErr) {
-              console.warn(`Storage upload failed for KYC doc ${i}:`, storageErr);
-              const sizeToCheck = doc.isMultiPage
-                ? JSON.stringify(doc.pages).length
-                : (doc.data ? doc.data.length : 0);
-                
-              if (sizeToCheck < 300000) {
-                uploadedDocs.push(doc);
-              } else {
+          if (isNewUpload) {
+            if (isInline) {
+              uploadedDocs.push(doc); // Save inline in database
+            } else {
+              try {
+                let fileUrl = '';
+                if (isGoogleDrive) {
+                  fileUrl = await uploadFileToGoogleDrive(doc);
+                } else {
+                  fileUrl = await uploadBase64ToStorage(`policies/${docId}/kyc_doc_${i}`, doc);
+                }
+                uploadedDocs.push({
+                  name: doc.name,
+                  type: doc.type,
+                  isMultiPageCloud: true,
+                  url: fileUrl
+                });
+              } catch(storageErr) {
+                console.warn(`Storage upload failed for KYC doc ${i}:`, storageErr);
                 uploadedDocs.push({
                   name: doc.name,
                   type: doc.type,
@@ -4818,7 +4822,7 @@ async function uploadPolicyToFirebase(entry) {
               }
             }
           } else {
-            uploadedDocs.push(doc);
+            uploadedDocs.push(doc); // Preserve existing
           }
         }
         cloudEntry.kyc_docs = uploadedDocs;
@@ -4828,25 +4832,18 @@ async function uploadPolicyToFirebase(entry) {
         const fallbackDocs = [];
         for (let i = 0; i < entry.kyc_docs.length; i++) {
           const doc = entry.kyc_docs[i];
-          const hasKycDocData = (doc.data && doc.data.startsWith('data:')) ||
-            (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
+          const sizeToCheck = doc.isMultiPage
+            ? JSON.stringify(doc.pages).length
+            : (doc.data ? doc.data.length : 0);
             
-          if (hasKycDocData) {
-            const sizeToCheck = doc.isMultiPage
-              ? JSON.stringify(doc.pages).length
-              : (doc.data ? doc.data.length : 0);
-              
-            if (sizeToCheck < 300000) {
-              fallbackDocs.push(doc);
-            } else {
-              fallbackDocs.push({
-                name: doc.name,
-                type: doc.type,
-                localOnly: true
-              });
-            }
-          } else {
+          if (sizeToCheck < 800000) {
             fallbackDocs.push(doc);
+          } else {
+            fallbackDocs.push({
+              name: doc.name,
+              type: doc.type,
+              localOnly: true
+            });
           }
         }
         cloudEntry.kyc_docs = fallbackDocs;
