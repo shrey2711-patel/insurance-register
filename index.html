@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.3";
+const CURRENT_VERSION = "1.7.4";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2867,6 +2867,7 @@ async function showCombinedKycViewer(docs, clientName) {
 
     for (let dIdx = 0; dIdx < docs.length; dIdx++) {
       const doc = docs[dIdx];
+      if (!doc) continue;
 
       let pages = [];
       if (doc.localOnly && !doc.data && !doc.url) {
@@ -4846,7 +4847,7 @@ async function uploadPolicyToFirebase(entry) {
               cloudEntry.policy_doc = {
                 name: entry.policy_doc.name,
                 type: entry.policy_doc.type,
-                isMultiPageCloud: true,
+                isMultiPageCloud: entry.policy_doc.isMultiPage ? true : false,
                 url: fileUrl
               };
             } else {
@@ -4855,7 +4856,7 @@ async function uploadPolicyToFirebase(entry) {
               cloudEntry.policy_doc = {
                 name: entry.policy_doc.name,
                 type: entry.policy_doc.type,
-                isMultiPageCloud: true,
+                isMultiPageCloud: entry.policy_doc.isMultiPage ? true : false,
                 url: fileUrl
               };
             }
@@ -4900,7 +4901,7 @@ async function uploadPolicyToFirebase(entry) {
                 uploadedDocs.push({
                   name: doc.name,
                   type: doc.type,
-                  isMultiPageCloud: true,
+                  isMultiPageCloud: doc.isMultiPage ? true : false,
                   url: fileUrl
                 });
               } catch(storageErr) {
