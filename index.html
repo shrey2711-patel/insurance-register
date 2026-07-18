@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.6";
+const CURRENT_VERSION = "1.7.7";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4822,13 +4822,16 @@ async function uploadPolicyToFirebase(entry) {
     delete cloudEntry._synced;
     const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
 
+    let totalInlineSize = 0;
+
     // Upload Policy PDF
     if (entry.policy_doc) {
       const sizeToCheck = entry.policy_doc.isMultiPage
         ? JSON.stringify(entry.policy_doc.pages).length
         : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
 
-      const isInline = sizeToCheck < 800000;
+      // Keep inline only if it is under 600KB
+      const isInline = sizeToCheck < 600000;
       const isNewUpload = (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
         (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url);
 
@@ -4836,8 +4839,9 @@ async function uploadPolicyToFirebase(entry) {
         if (isInline) {
           // Keep it inline in the database to avoid Storage CORS issues and save space
           cloudEntry.policy_doc = entry.policy_doc;
+          totalInlineSize += sizeToCheck;
         } else {
-          // If it exceeds 800KB, upload to Storage/Drive
+          // If it exceeds 600KB, upload to Storage/Drive
           try {
             if (isGoogleDrive) {
               showToast("☁️ Uploading Policy PDF to Google Drive...");
@@ -4868,26 +4872,37 @@ async function uploadPolicyToFirebase(entry) {
             showToast("⚠️ Policy PDF too large for free cloud sync; stored locally on this device.", true);
           }
         }
+      } else {
+        if (entry.policy_doc.data) {
+          totalInlineSize += sizeToCheck;
+        }
       }
     }
 
+    // Normalize KYC files list for compatibility with historical single kyc_doc entries
+    const kycList = Array.isArray(entry.kyc_docs) ? entry.kyc_docs : (entry.kyc_doc ? [entry.kyc_doc] : []);
+
     // Upload KYC Documents
-    if (Array.isArray(entry.kyc_docs) && entry.kyc_docs.length > 0) {
+    if (kycList.length > 0) {
       try {
         const uploadedDocs = [];
-        for (let i = 0; i < entry.kyc_docs.length; i++) {
-          const doc = entry.kyc_docs[i];
+        for (let i = 0; i < kycList.length; i++) {
+          const doc = kycList[i];
+          if (!doc) continue;
+
           const sizeToCheck = doc.isMultiPage
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
 
-          const isInline = sizeToCheck < 800000;
+          // Save inline only if the cumulative inline size stays under 600KB
+          const isInline = (totalInlineSize + sizeToCheck) < 600000;
           const isNewUpload = (doc.data && doc.data.startsWith('data:')) ||
             (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
 
           if (isNewUpload) {
             if (isInline) {
               uploadedDocs.push(doc); // Save inline in database
+              totalInlineSize += sizeToCheck;
             } else {
               try {
                 let fileUrl = '';
@@ -4913,7 +4928,10 @@ async function uploadPolicyToFirebase(entry) {
               }
             }
           } else {
-            uploadedDocs.push(doc); // Preserve existing
+            if (doc.data) {
+              totalInlineSize += sizeToCheck;
+            }
+            uploadedDocs.push(doc); // Preserve existing URL or inline item
           }
         }
         cloudEntry.kyc_docs = uploadedDocs;
@@ -4921,13 +4939,15 @@ async function uploadPolicyToFirebase(entry) {
       } catch(err) {
         console.warn("Storage upload failed, using direct database fallback for KYC Documents:", err);
         const fallbackDocs = [];
-        for (let i = 0; i < entry.kyc_docs.length; i++) {
-          const doc = entry.kyc_docs[i];
+        for (let i = 0; i < kycList.length; i++) {
+          const doc = kycList[i];
+          if (!doc) continue;
+
           const sizeToCheck = doc.isMultiPage
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
 
-          if (sizeToCheck < 800000) {
+          if (sizeToCheck < 600000) {
             fallbackDocs.push(doc);
           } else {
             fallbackDocs.push({
