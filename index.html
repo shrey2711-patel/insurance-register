@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.7";
+const CURRENT_VERSION = "1.7.8";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4964,6 +4964,17 @@ async function uploadPolicyToFirebase(entry) {
 
     await dbCloud.collection("policies").doc(docId).set(cloudEntry);
     logActivity(`☁️ Cloud Synced: ${entry.name} saved to Firebase.`, "info");
+
+    // Update local DATA array and local IndexedDB to match the synced cloud entry
+    const localIndex = DATA.findIndex(item => String(item.id) === docId);
+    if (localIndex > -1) {
+      cloudEntry._synced = true;
+      DATA[localIndex] = cloudEntry;
+      
+      const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      store.put(cloudEntry);
+    }
   } finally {
     setTimeout(() => {
       uploadingDocIds.delete(docId);
