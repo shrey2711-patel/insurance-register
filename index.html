@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.0";
+const CURRENT_VERSION = "1.7.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2664,11 +2664,25 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
     // Case 0: Multi-page document stored in cloud as JSON
     if (doc.isMultiPageCloud && doc.url) {
       showToast("☁️ Loading pages from cloud...");
-      const response = await fetch(doc.url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch cloud pages: ${response.statusText}`);
+      let jsonStr;
+      if (storageCloud) {
+        try {
+          const ref = storageCloud.refFromURL(doc.url);
+          const blob = await ref.getBlob();
+          jsonStr = await blob.text();
+        } catch (sdkErr) {
+          console.warn("Storage SDK getBlob failed, falling back to fetch:", sdkErr);
+          const response = await fetch(doc.url);
+          if (!response.ok) throw new Error(response.statusText);
+          jsonStr = await response.text();
+        }
+      } else {
+        const response = await fetch(doc.url);
+        if (!response.ok) throw new Error(response.statusText);
+        jsonStr = await response.text();
       }
-      pagesToRender = await response.json();
+      
+      pagesToRender = JSON.parse(jsonStr);
       currentViewerDoc.pages = pagesToRender;
     }
     // Case 1: Pre-rendered multi-page pages array
@@ -2807,9 +2821,23 @@ async function showCombinedKycViewer(docs, clientName) {
         pages = doc.pages;
       } else if (doc.isMultiPageCloud && doc.url) {
         try {
-          const response = await fetch(doc.url);
-          if (response.ok) {
-            pages = await response.json();
+          let jsonStr;
+          if (storageCloud) {
+            try {
+              const ref = storageCloud.refFromURL(doc.url);
+              const blob = await ref.getBlob();
+              jsonStr = await blob.text();
+            } catch (sdkErr) {
+              console.warn("Storage SDK getBlob failed, falling back to fetch:", sdkErr);
+              const response = await fetch(doc.url);
+              if (response.ok) jsonStr = await response.text();
+            }
+          } else {
+            const response = await fetch(doc.url);
+            if (response.ok) jsonStr = await response.text();
+          }
+          if (jsonStr) {
+            pages = JSON.parse(jsonStr);
           }
         } catch (fetchErr) {
           console.warn("Failed to fetch cloud KYC pages:", fetchErr);
