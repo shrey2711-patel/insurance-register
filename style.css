@@ -1192,26 +1192,3 @@
     40% { transform: rotate(-5deg); }
     50% { transform: rotate(0deg); }
   }
-
-  /* Settings Modal tab buttons styling */
-  .settings-tab-btn {
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted);
-    padding: 8px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-  }
-  .settings-tab-btn:hover {
-    color: var(--text);
-  }
-  .settings-tab-btn.active {
-    color: var(--accent);
-    border-bottom: 2px solid var(--accent);
-  }

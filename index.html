@@ -1316,7 +1316,10 @@
       <button class="nav-btn" onclick="checkDailyAlerts(true)"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-bell" style="color:var(--purple);"></i> View Daily Alerts &nbsp;<span id="alertsSidebarBadge" style="display:none; background:#d946ef; color:#fff; padding:1px 5px; border-radius:10px; font-size:9.5px; font-weight:bold;">0</span></span></span></button>
       <button class="nav-btn" onclick="exportExcel()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-excel" style="color:var(--accent);"></i> Export Excel Sheet</span></span></button>
       <button class="nav-btn" onclick="openTemplateModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-brands fa-whatsapp" style="color:var(--accent);"></i> Edit Message Template</span></span></button>
-      <button class="nav-btn" onclick="openSecuritySettingsModal('cloud')"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-gear" style="color:var(--amber);"></i> System & Storage Settings</span></span></button>
+      <button class="nav-btn" onclick="openSecuritySettingsModal()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-cloud" style="color:var(--amber);"></i> Firebase Cloud Sync Settings</span></span></button>
+      <button class="nav-btn" onclick="downloadJSONBackup()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-arrow-down" style="color:var(--purple);"></i> Download Ledger Backup</span></span></button>
+      <button class="nav-btn" onclick="triggerJSONBackupSelect()"><span class="stack-cell"><span style="color:var(--text);font-weight:600;"><i class="fa-solid fa-file-arrow-up" style="color:var(--blue);"></i> Restore Ledger Backup</span></span></button>
+      <button class="nav-btn" onclick="wipeEntireRegister()"><span class="stack-cell"><span style="color:var(--red);font-weight:600;"><i class="fa-solid fa-trash-can" style="color:var(--red);"></i> Wipe Entire Register</span></span></button>
     </div>
 
     <!-- Session Audit Activity Log -->
@@ -1392,10 +1395,12 @@
           <option value="11">December</option>
         </select>
         
-        <!-- System Settings Button -->
-        <button class="btn btn-secondary" onclick="openSecuritySettingsModal('simulator')" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; height: auto; width: auto; font-weight: 600; border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.04);">
-          <i class="fa-solid fa-gear"></i> System Settings
-        </button>
+        <!-- Interactive Date Simulator Tool -->
+        <div style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px;">
+          <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Simulate Date:</span>
+          <input type="date" id="dateSimulator" onchange="updateSimulatedDate()" style="background:transparent; border:none; color:var(--text); font-family:'DM Mono',monospace; font-size:12px; outline:none; cursor:pointer;">
+          <button onclick="resetSimulatedDate()" style="background:transparent; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer;"><i class="fa-solid fa-rotate-left"></i> Today</button>
+        </div>
       </div>
     </div>
 
@@ -1739,111 +1744,61 @@
 
 <!-- SECURITY & API SETTINGS MODAL -->
 <div class="modal-overlay" id="securitySettingsModal">
-  <div class="modal" style="max-width: 600px; border-top: 5px solid var(--accent);">
+  <div class="modal" style="max-width: 580px;">
     <div class="modal-header">
-      <h2><i class="fa-solid fa-gear" style="color:var(--accent);"></i> System & Storage Settings</h2>
+      <h2><i class="fa-solid fa-cloud-arrow-up" style="color:var(--amber);"></i> Firebase Cloud Sync Settings</h2>
       <button class="modal-close" onclick="closeModal('securitySettingsModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    
-    <!-- Modal Navigation Tabs -->
-    <div class="settings-tabs" style="display:flex; border-bottom:1px solid var(--border); margin-bottom:15px; gap:8px;">
-      <button class="settings-tab-btn active" id="tabBtn-cloud" onclick="switchSettingsTab('cloud')"><i class="fa-solid fa-cloud"></i> Cloud Sync</button>
-      <button class="settings-tab-btn" id="tabBtn-simulator" onclick="switchSettingsTab('simulator')"><i class="fa-solid fa-calendar-days"></i> Date Simulator</button>
-      <button class="settings-tab-btn" id="tabBtn-ledger" onclick="switchSettingsTab('ledger')"><i class="fa-solid fa-database"></i> Ledger Tools</button>
-    </div>
-
-    <div class="modal-body" style="padding-top:0;">
-      
-      <!-- Panel 1: Cloud Sync Settings -->
-      <div class="settings-panel" id="panel-cloud">
-        <!-- Google Firebase Cloud Sync -->
-        <div style="padding-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:12.5px; font-weight:700; color:var(--text);"><i class="fa-solid fa-circle-nodes" style="color:var(--accent);"></i> Real-time Cloud Synchronization</span>
-            <label style="display:flex; align-items:center; gap:6px; font-size:11px; cursor:pointer; font-weight: 600;">
-              <input type="checkbox" id="settingsFirebaseEnabled" style="cursor:pointer;" onchange="toggleFirebaseInputs(this.checked)">
-              Enable Cloud Sync
-            </label>
-          </div>
-          <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Sync policies, PDFs, and KYC documents in real time across multiple computers or mobile phones securely.</p>
-          
-          <div id="firebaseConfigFields" style="display:none; margin-top:12px;">
-            <div style="display:flex; gap:10px;">
-              <button type="button" class="btn btn-secondary" onclick="testFirebaseCloudConnection()" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--amber); color:var(--amber); background:rgba(217,119,6,0.05);"><i class="fa-solid fa-circle-nodes"></i> Test Connection</button>
-              <button type="button" class="btn btn-secondary" onclick="syncLocalToCloud()" id="btnSyncLocalToCloud" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--purple); color:var(--purple); background:rgba(124,58,237,0.05);"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Local Data</button>
-            </div>
-          </div>
+    <div class="modal-body">
+      <!-- Google Firebase Cloud Sync -->
+      <div style="padding-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:12.5px; font-weight:700; color:var(--text);"><i class="fa-solid fa-circle-nodes" style="color:var(--accent);"></i> Real-time Cloud Synchronization</span>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11px; cursor:pointer; font-weight: 600;">
+            <input type="checkbox" id="settingsFirebaseEnabled" style="cursor:pointer;" onchange="toggleFirebaseInputs(this.checked)">
+            Enable Cloud Sync
+          </label>
         </div>
+        <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Sync policies, PDFs, and KYC documents in real time across multiple computers or mobile phones securely.</p>
         
-        <!-- Google Drive File Upload -->
-        <div style="padding-top:14px; margin-top:14px; border-top:1px dashed var(--border);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:12.5px; font-weight:700; color:var(--text);"><i class="fab fa-google-drive" style="color:var(--orange);"></i> Google Drive Storage</span>
-            <label style="display:flex; align-items:center; gap:6px; font-size:11px; cursor:pointer; font-weight: 600;">
-              <input type="checkbox" id="settingsGoogleDriveEnabled" style="cursor:pointer;" onchange="toggleGoogleDriveInputs(this.checked)">
-              Enable Google Drive
-            </label>
-          </div>
-          <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Store PDFs and images securely inside a Google Drive folder using a Google Apps Script Web App. If enabled, this replaces Firebase Storage for files.</p>
-          
-          <div id="googleDriveFields" style="display:none;">
-            <div class="form-row">
-              <div class="form-group" style="flex:2;">
-                <label>Google Apps Script Web App URL</label>
-                <input type="text" class="form-input" id="settingsGoogleDriveWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
-              </div>
-            </div>
-            <div class="form-row" style="margin-top:10px;">
-              <div class="form-group">
-                <label>Google Drive Folder ID (Optional)</label>
-                <input type="text" class="form-input" id="settingsGoogleDriveFolderId" placeholder="e.g. 1aBcDeFgHiJkLmNoPqRsTuVwXyZ">
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 2: Date Simulator Settings -->
-      <div class="settings-panel" id="panel-simulator" style="display:none;">
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <h3 style="font-size:13.5px; font-weight:700; color:var(--text);"><i class="fa-solid fa-calendar-days" style="color:var(--accent);"></i> Simulated Calendar Date</h3>
-          <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:4px;">Override the system calendar date to test alerts, preview upcoming expiries, or backdate entries easily.</p>
-          
-          <div style="display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); padding: 12px; border-radius: 8px; max-width: 380px;">
-            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Simulate Date:</span>
-            <input type="date" id="dateSimulator" onchange="updateSimulatedDate()" style="background:transparent; border:none; color:var(--text); font-family:'DM Mono',monospace; font-size:12.5px; outline:none; cursor:pointer;">
-            <button onclick="resetSimulatedDate()" class="btn btn-secondary" style="font-size:11px; padding:4px 8px; height:auto; width:auto; border-color:var(--accent); color:var(--accent); background:rgba(99,102,241,0.05); cursor:pointer;"><i class="fa-solid fa-rotate-left"></i> Today</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 3: Ledger Management Tools -->
-      <div class="settings-panel" id="panel-ledger" style="display:none;">
-        <div style="display:flex; flex-direction:column; gap:16px;">
-          <div>
-            <h3 style="font-size:13px; font-weight:700; color:var(--text);"><i class="fa-solid fa-file-export" style="color:var(--purple); margin-right:4px;"></i> Download Backup</h3>
-            <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:8px;">Download a JSON copy of all policy records to your local computer as a safe offline backup.</p>
-            <button class="btn btn-secondary" onclick="downloadJSONBackup()" style="font-size:11.5px; padding:6px 12px; height:auto; width:auto; cursor:pointer;"><i class="fa-solid fa-file-arrow-down" style="color:var(--purple);"></i> Download Ledger Backup</button>
-          </div>
-          
-          <div style="border-top:1px dashed var(--border); padding-top:12px;">
-            <h3 style="font-size:13px; font-weight:700; color:var(--text);"><i class="fa-solid fa-file-import" style="color:var(--blue); margin-right:4px;"></i> Restore Backup</h3>
-            <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:8px;">Restore policy records from an existing backup file. This will merge files with the current database.</p>
-            <button class="btn btn-secondary" onclick="triggerJSONBackupSelect()" style="font-size:11.5px; padding:6px 12px; height:auto; width:auto; cursor:pointer;"><i class="fa-solid fa-file-arrow-up" style="color:var(--blue);"></i> Restore Ledger Backup</button>
-          </div>
-
-          <div style="border-top:1px dashed var(--border); padding-top:12px;">
-            <h3 style="font-size:13px; font-weight:700; color:var(--red);"><i class="fa-solid fa-triangle-exclamation" style="margin-right:4px;"></i> Danger Zone</h3>
-            <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:8px;">Permanently wipe all records, local storage logs, and attachments. This action cannot be undone.</p>
-            <button class="btn btn-danger" onclick="wipeEntireRegister()" style="font-size:11.5px; padding:6px 12px; height:auto; width:auto; cursor:pointer;"><i class="fa-solid fa-trash-can"></i> Wipe Entire Register</button>
+        <div id="firebaseConfigFields" style="display:none; margin-top:12px;">
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-secondary" onclick="testFirebaseCloudConnection()" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--amber); color:var(--amber); background:rgba(217,119,6,0.05);"><i class="fa-solid fa-circle-nodes"></i> Test Connection</button>
+            <button type="button" class="btn btn-secondary" onclick="syncLocalToCloud()" id="btnSyncLocalToCloud" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--purple); color:var(--purple); background:rgba(124,58,237,0.05);"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Local Data</button>
           </div>
         </div>
       </div>
       
+      <!-- Google Drive File Upload -->
+      <div style="padding-top:14px; margin-top:14px; border-top:1px dashed var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:12.5px; font-weight:700; color:var(--text);"><i class="fab fa-google-drive" style="color:var(--orange);"></i> Google Drive Storage</span>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11px; cursor:pointer; font-weight: 600;">
+            <input type="checkbox" id="settingsGoogleDriveEnabled" style="cursor:pointer;" onchange="toggleGoogleDriveInputs(this.checked)">
+            Enable Google Drive
+          </label>
+        </div>
+        <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Store PDFs and images securely inside a Google Drive folder using a Google Apps Script Web App. If enabled, this replaces Firebase Storage for files.</p>
+        
+        <div id="googleDriveFields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group" style="flex:2;">
+              <label>Google Apps Script Web App URL</label>
+              <input type="text" class="form-input" id="settingsGoogleDriveWebAppUrl" placeholder="https://script.google.com/macros/s/.../exec">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="form-group">
+              <label>Google Drive Folder ID (Optional)</label>
+              <input type="text" class="form-input" id="settingsGoogleDriveFolderId" placeholder="e.g. 1aBcDeFgHiJkLmNoPqRsTuVwXyZ">
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('securitySettingsModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSecuritySettings()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+      <button class="btn btn-primary" onclick="saveSecuritySettings()"><i class="fa-solid fa-floppy-disk"></i> Save Cloud Sync Settings</button>
     </div>
   </div>
 </div>
@@ -1921,7 +1876,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.4.0";
+const CURRENT_VERSION = "1.3.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4133,7 +4088,7 @@ window.addEventListener('click', (e) => {
 
 
 // Security API Settings Modal controls
-function openSecuritySettingsModal(defaultTab = 'cloud') {
+function openSecuritySettingsModal() {
   // Load Firebase Config
   const fbEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   document.getElementById('settingsFirebaseEnabled').checked = fbEnabled;
@@ -4148,22 +4103,6 @@ function openSecuritySettingsModal(defaultTab = 'cloud') {
   document.getElementById('settingsGoogleDriveFolderId').value = storage.getItem('MMC_GDRIVE_FOLDER_ID') || '';
   
   openModal('securitySettingsModal');
-  switchSettingsTab(defaultTab);
-}
-
-function switchSettingsTab(tabName) {
-  // Hide all panels
-  document.querySelectorAll('.settings-panel').forEach(p => p.style.display = 'none');
-  // Deactivate all tab buttons
-  document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
-  
-  // Show target panel
-  const panel = document.getElementById(`panel-${tabName}`);
-  if (panel) panel.style.display = 'block';
-  
-  // Find and activate matching tab button
-  const tabBtn = document.getElementById(`tabBtn-${tabName}`);
-  if (tabBtn) tabBtn.classList.add('active');
 }
 
 function saveSecuritySettings() {
