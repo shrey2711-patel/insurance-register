@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.8";
+const CURRENT_VERSION = "1.7.9";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2136,25 +2136,27 @@ function loadAllRecordsFromDB() {
 
             let mergedItem = { ...cloudItem };
             if (localItem) {
-              if (cloudItem.policy_doc && cloudItem.policy_doc.localOnly) {
-                if (localItem.policy_doc && localItem.policy_doc.data) {
+              if (cloudItem.policy_doc) {
+                const localDoc = localItem.policy_doc;
+                if (localDoc) {
                   mergedItem.policy_doc = {
                     ...cloudItem.policy_doc,
-                    data: localItem.policy_doc.data
+                    data: localDoc.data || cloudItem.policy_doc.data,
+                    pages: localDoc.pages || cloudItem.policy_doc.pages
                   };
                 }
               }
 
               if (Array.isArray(cloudItem.kyc_docs)) {
                 mergedItem.kyc_docs = cloudItem.kyc_docs.map((cloudKyc, kIdx) => {
-                  if (cloudKyc && cloudKyc.localOnly) {
-                    const localKyc = Array.isArray(localItem.kyc_docs) ? localItem.kyc_docs[kIdx] : null;
-                    if (localKyc && localKyc.data) {
-                      return {
-                        ...cloudKyc,
-                        data: localKyc.data
-                      };
-                    }
+                  if (!cloudKyc) return cloudKyc;
+                  const localKyc = Array.isArray(localItem.kyc_docs) ? localItem.kyc_docs[kIdx] : null;
+                  if (localKyc) {
+                    return {
+                      ...cloudKyc,
+                      data: localKyc.data || cloudKyc.data,
+                      pages: localKyc.pages || cloudKyc.pages
+                    };
                   }
                   return cloudKyc;
                 });
@@ -4968,12 +4970,38 @@ async function uploadPolicyToFirebase(entry) {
     // Update local DATA array and local IndexedDB to match the synced cloud entry
     const localIndex = DATA.findIndex(item => String(item.id) === docId);
     if (localIndex > -1) {
-      cloudEntry._synced = true;
-      DATA[localIndex] = cloudEntry;
+      const localEntry = { ...cloudEntry };
+      
+      if (entry.policy_doc) {
+        localEntry.policy_doc = {
+          ...cloudEntry.policy_doc,
+          data: entry.policy_doc.data || cloudEntry.policy_doc.data,
+          pages: entry.policy_doc.pages || cloudEntry.policy_doc.pages
+        };
+      }
+      
+      if (Array.isArray(entry.kyc_docs)) {
+        localEntry.kyc_docs = cloudEntry.kyc_docs.map((cloudKyc, kIdx) => {
+          if (!cloudKyc) return cloudKyc;
+          const originalKyc = entry.kyc_docs[kIdx];
+          if (originalKyc) {
+            return {
+              ...cloudKyc,
+              data: originalKyc.data || cloudKyc.data,
+              pages: originalKyc.pages || cloudKyc.pages
+            };
+          }
+          return cloudKyc;
+        });
+        localEntry.kyc_doc = localEntry.kyc_docs.length > 0 ? localEntry.kyc_docs[0] : null;
+      }
+      
+      localEntry._synced = true;
+      DATA[localIndex] = localEntry;
       
       const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
-      store.put(cloudEntry);
+      store.put(localEntry);
     }
   } finally {
     setTimeout(() => {
