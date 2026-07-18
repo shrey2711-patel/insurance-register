@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.0";
+const CURRENT_VERSION = "1.8.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4875,8 +4875,10 @@ async function uploadPolicyToFirebase(entry) {
           }
         }
       } else {
-        if (entry.policy_doc.data) {
-          totalInlineSize += sizeToCheck;
+        if (entry.policy_doc.pages) {
+          totalInlineSize += JSON.stringify(entry.policy_doc.pages).length;
+        } else if (entry.policy_doc.data) {
+          totalInlineSize += entry.policy_doc.data.length;
         }
       }
     }
@@ -4930,8 +4932,10 @@ async function uploadPolicyToFirebase(entry) {
               }
             }
           } else {
-            if (doc.data) {
-              totalInlineSize += sizeToCheck;
+            if (doc.pages) {
+              totalInlineSize += JSON.stringify(doc.pages).length;
+            } else if (doc.data) {
+              totalInlineSize += doc.data.length;
             }
             uploadedDocs.push(doc); // Preserve existing URL or inline item
           }
@@ -5003,6 +5007,9 @@ async function uploadPolicyToFirebase(entry) {
       const store = transaction.objectStore(STORE_NAME);
       store.put(localEntry);
     }
+  } catch(err) {
+    console.error("Cloud Sync write failed:", err);
+    showToast("❌ Cloud Sync Failed: check console or file sizes", true);
   } finally {
     setTimeout(() => {
       uploadingDocIds.delete(docId);
