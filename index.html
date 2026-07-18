@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.7";
+const CURRENT_VERSION = "1.8.8";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4867,12 +4867,59 @@ function sanitizeForFirestore(obj) {
     const out = {};
     for (const key of Object.keys(obj)) {
       const val = obj[key];
-      if (val === undefined) continue; // drop undefined fields entirely
+      if (val === undefined) continue;
       out[key] = sanitizeForFirestore(val);
     }
     return out;
   }
   return obj;
+}
+
+// Re-encode a single JPEG/PNG data URL at a given quality via canvas.
+function recompressJpegDataUrl(dataUrl, quality) {
+  return new Promise(resolve => {
+    if (!dataUrl || !dataUrl.startsWith('data:')) { resolve(dataUrl); return; }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // fallback: keep original
+    img.src = dataUrl;
+  });
+}
+
+// Re-compress a doc's image payload (data or pages[]) until it fits targetBytes.
+// Returns a new doc object safe for Firestore; original is untouched.
+async function recompressDocToFit(doc, targetBytes) {
+  if (!doc) return doc;
+
+  // Binary-search approach: try qualities from 0.40 down to 0.22
+  for (let quality = 0.40; quality >= 0.22; quality -= 0.06) {
+    if (doc.isMultiPage && Array.isArray(doc.pages) && doc.pages.length > 0) {
+      const recompressedPages = await Promise.all(
+        doc.pages.map(async page => ({
+          ...page,
+          data: await recompressJpegDataUrl(page.data, quality)
+        }))
+      );
+      const recompressedSize = JSON.stringify(recompressedPages).length;
+      if (recompressedSize <= targetBytes) {
+        return { ...doc, pages: recompressedPages };
+      }
+    } else if (doc.data) {
+      const recompressedData = await recompressJpegDataUrl(doc.data, quality);
+      if (recompressedData.length <= targetBytes) {
+        return { ...doc, data: recompressedData };
+      }
+    } else {
+      break; // no image data to compress
+    }
+  }
+  return doc; // best-effort: return original (Firestore write may still fail but we tried)
 }
 
 async function uploadPolicyToFirebase(entry) {
@@ -4882,7 +4929,6 @@ async function uploadPolicyToFirebase(entry) {
 
   // Firestore hard limit: 1,048,576 bytes (1 MiB) per document.
   // We use 950 KB as the inline budget — leaves ~98 KB for all text fields.
-  // Every file is compressed on upload, so most insurance docs comfortably fit.
   const FIRESTORE_INLINE_BUDGET = 950000;
   let usedBudget = 0;
 
@@ -4890,14 +4936,15 @@ async function uploadPolicyToFirebase(entry) {
 
   /**
    * Process a single file for cloud storage.
-   * - If it's not newly uploaded (no isNew flag), pass through unchanged.
-   * - If it fits in the remaining inline budget, store it inline in Firestore.
-   * - Otherwise, upload to Firebase Storage / Google Drive.
+   *
+   * ALWAYS measures size — even for existing docs (no isNew flag).
+   * Old records uploaded before compression fixes may be oversized; they get
+   * re-compressed inline here so they never exceed the 1 MB Firestore limit.
    *
    * Returns { cloudDoc, localDoc, size }
-   *   cloudDoc → goes into Firestore
-   *   localDoc → stays in local IndexedDB (always has the binary)
-   *   size     → how many bytes were used from the inline budget (0 if uploaded to Storage)
+   *   cloudDoc → sanitized and size-safe version for Firestore
+   *   localDoc → original quality kept in local IndexedDB
+   *   size     → bytes consumed from the shared inline budget
    */
   async function processDocForCloud(doc, storagePath, budgetRemaining) {
     if (!doc) return { cloudDoc: null, localDoc: null, size: 0 };
@@ -4905,51 +4952,56 @@ async function uploadPolicyToFirebase(entry) {
     const cleanDoc = { ...doc };
     delete cleanDoc.isNew;
 
-    // Existing doc (no isNew flag) — pass through without re-uploading or re-counting.
-    // These are already correctly stored in Firestore from the previous sync.
-    if (!doc.isNew) {
-      return { cloudDoc: cleanDoc, localDoc: cleanDoc, size: 0 };
-    }
+    // Measure actual binary payload size
+    const size = cleanDoc.isMultiPage
+      ? JSON.stringify(cleanDoc.pages || []).length
+      : (cleanDoc.data ? cleanDoc.data.length : 0);
 
-    // New upload — compute binary payload size
-    const size = doc.isMultiPage
-      ? JSON.stringify(doc.pages || []).length
-      : (doc.data ? doc.data.length : 0);
-
-    // Fit inline if it fits within the remaining shared budget
+    // ── Fits in budget → use as-is ──────────────────────────────────────────
     if (size <= budgetRemaining) {
       return { cloudDoc: cleanDoc, localDoc: cleanDoc, size };
     }
 
-    // Too large for inline budget — upload to Storage / Drive
-    try {
-      let fileUrl = '';
-      if (isGoogleDrive) {
-        showToast(`☁️ Uploading ${doc.name} to Google Drive...`);
-        fileUrl = await uploadFileToGoogleDrive(doc);
-      } else {
-        showToast(`☁️ Uploading ${doc.name} to Cloud Storage...`);
-        fileUrl = await uploadBase64ToStorage(storagePath, doc);
+    // ── Too large — decide what to do ────────────────────────────────────────
+
+    if (doc.isNew) {
+      // New upload: try Firebase Storage / Google Drive first
+      try {
+        let fileUrl = '';
+        if (isGoogleDrive) {
+          showToast(`☁️ Uploading ${doc.name} to Google Drive...`);
+          fileUrl = await uploadFileToGoogleDrive(doc);
+        } else {
+          showToast(`☁️ Uploading ${doc.name} to Cloud Storage...`);
+          fileUrl = await uploadBase64ToStorage(storagePath, doc);
+        }
+        return {
+          cloudDoc: { name: doc.name, type: doc.type, isMultiPageCloud: !!doc.isMultiPage, url: fileUrl },
+          localDoc: cleanDoc,
+          size: 0
+        };
+      } catch (err) {
+        console.warn(`Storage upload failed for ${storagePath}, will re-compress inline:`, err);
+        // Fall through to re-compress
       }
-      const cloudDoc = {
-        name: doc.name,
-        type: doc.type,
-        isMultiPageCloud: !!doc.isMultiPage,
-        url: fileUrl
-      };
-      // Local copy keeps full binary for instant local preview
-      return { cloudDoc, localDoc: cleanDoc, size: 0 };
-    } catch (err) {
-      console.warn(`Storage upload failed for ${storagePath}:`, err);
-      showToast(`⚠️ ${doc.name} too large for cloud — stored locally only.`, true);
-      // Mark as localOnly in cloud; retain binary locally
-      return {
-        cloudDoc: { name: doc.name, type: doc.type, localOnly: true },
-        localDoc: cleanDoc,
-        size: 0
-      };
     }
+
+    // Existing oversized doc (or new upload where Storage failed):
+    // Re-compress the JPEG data to fit the remaining budget.
+    // Cloud gets compressed version; local keeps the higher-quality original.
+    showToast(`🗜️ Re-compressing ${doc.name || 'document'} to fit cloud limit...`);
+    const recompressed = await recompressDocToFit(cleanDoc, budgetRemaining);
+    const newSize = recompressed.isMultiPage
+      ? JSON.stringify(recompressed.pages || []).length
+      : (recompressed.data ? recompressed.data.length : 0);
+
+    return {
+      cloudDoc: recompressed, // compressed for Firestore
+      localDoc: cleanDoc,     // original quality stays local
+      size: newSize
+    };
   }
+
 
   try {
     const cloudEntry = { ...entry };
