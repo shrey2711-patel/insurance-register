@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.5";
+const CURRENT_VERSION = "1.7.6";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2594,9 +2594,7 @@ function isPdfDocument(doc) {
 }
 
 function getCloudPdfViewerUrl(url) {
-  return /drive\.google\.com/i.test(url)
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
-    : url;
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
 }
 
 function buildCloudPreviewHtml(doc) {
