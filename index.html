@@ -1916,7 +1916,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.6.0";
+const CURRENT_VERSION = "1.6.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2621,37 +2621,232 @@ function downloadDoc(idx, type) {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
     
-    if (docs.length === 1 && (docs[0].isMultiPage || docs[0].pages)) {
+    if (docs.length === 1) {
       doc = docs[0];
     } else {
-      docs.forEach((d, dIdx) => {
-        setTimeout(() => {
-          triggerFileDownload(d, item.name);
-        }, dIdx * 350);
-      });
+      showCombinedKycViewer(docs, item.name);
       return;
     }
   }
   
   if (!doc) return;
+  loadAndShowDocumentInViewer(doc, item.name);
+}
+
+async function loadAndShowDocumentInViewer(doc, clientName) {
+  currentViewerDoc = doc;
+  currentViewerClientName = clientName;
   
-  if (doc.isMultiPage || doc.pages) {
-    currentViewerDoc = doc;
-    currentViewerClientName = item.name;
+  // Set title
+  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> ${doc.name} — ${clientName}`;
+  
+  const pagesContainer = document.getElementById('docViewerPagesContainer');
+  pagesContainer.innerHTML = `<div style="color: var(--text); padding: 40px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i><br/>Loading document...</div>`;
+  
+  openModal('documentViewerModal');
+  
+  try {
+    let pagesToRender = [];
     
-    document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> ${doc.name} — ${item.name}`;
+    // Case 1: Pre-rendered multi-page pages array
+    if (doc.pages && doc.pages.length > 0) {
+      pagesToRender = doc.pages;
+    } 
+    // Case 2: Base64 image
+    else if (doc.data && (doc.data.startsWith('data:image/') || doc.type.startsWith('image/'))) {
+      pagesToRender = [{
+        data: doc.data,
+        width: 800,
+        height: 600
+      }];
+      // Update currentViewerDoc with pages array so download buttons work
+      currentViewerDoc.pages = pagesToRender;
+    }
+    // Case 3: Base64 PDF (old uploads)
+    else if (doc.data && (doc.data.startsWith('data:application/pdf') || doc.type === 'application/pdf')) {
+      showToast("📄 Rendering PDF pages...");
+      const parts = doc.data.split(';base64,');
+      const base64Data = parts[1] || parts[0];
+      const binary = atob(base64Data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const numPages = pdf.numPages;
+      pagesToRender = [];
+      
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        pagesToRender.push({
+          data: canvas.toDataURL('image/jpeg', 0.8),
+          width: viewport.width,
+          height: viewport.height
+        });
+      }
+      // Update currentViewerDoc with pages array so download buttons work
+      currentViewerDoc.pages = pagesToRender;
+    }
+    // Case 4: Cloud URL (firebase storage/google drive)
+    else if (doc.url) {
+      pagesContainer.innerHTML = `
+        <div style="color: var(--text); padding: 40px;">
+          <i class="fa-solid fa-cloud-arrow-up fa-3x" style="color: var(--accent); margin-bottom: 15px;"></i>
+          <h3>Cloud Document</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">This document is stored securely in the cloud.</p>
+          <a href="${doc.url}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+          </a>
+        </div>
+      `;
+      // Disable ZIP/PDF download buttons since it's a cloud link
+      document.getElementById('btnDownloadZip').style.display = 'none';
+      document.getElementById('btnDownloadPdf').style.display = 'none';
+      return;
+    }
     
-    const pagesContainer = document.getElementById('docViewerPagesContainer');
-    pagesContainer.innerHTML = doc.pages.map((page, pIdx) => `
+    // If no pages were rendered, show error
+    if (pagesToRender.length === 0) {
+      throw new Error("No pages found or could not render document.");
+    }
+    
+    // Enable zip/pdf buttons
+    document.getElementById('btnDownloadZip').style.display = 'inline-flex';
+    document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
+    
+    pagesContainer.innerHTML = pagesToRender.map((page, pIdx) => `
       <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px;">
-        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600;">Page ${pIdx + 1} of ${doc.pages.length}</div>
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600;">Page ${pIdx + 1} of ${pagesToRender.length}</div>
         <img src="${page.data}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="Page ${pIdx + 1}">
       </div>
     `).join('');
     
-    openModal('documentViewerModal');
-  } else {
-    triggerFileDownload(doc, item.name);
+  } catch (err) {
+    console.error("Viewer rendering failed:", err);
+    pagesContainer.innerHTML = `
+      <div style="color: var(--text); padding: 40px;">
+        <i class="fa-solid fa-triangle-exclamation fa-3x" style="color: var(--orange); margin-bottom: 15px;"></i>
+        <h3>Failed to Load Document</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">${err.message || "The file could not be parsed."}</p>
+        <button class="btn btn-secondary" onclick="triggerFileDownload(currentViewerDoc, currentViewerClientName)">
+          <i class="fa-solid fa-download"></i> Try Direct Download
+        </button>
+      </div>
+    `;
+  }
+}
+
+async function showCombinedKycViewer(docs, clientName) {
+  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-id-card" style="color:var(--purple);"></i> KYC Documents — ${clientName}`;
+  
+  const pagesContainer = document.getElementById('docViewerPagesContainer');
+  pagesContainer.innerHTML = `<div style="color: var(--text); padding: 40px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i><br/>Loading KYC Documents...</div>`;
+  
+  openModal('documentViewerModal');
+  
+  try {
+    let combinedPages = [];
+    
+    for (let dIdx = 0; dIdx < docs.length; dIdx++) {
+      const doc = docs[dIdx];
+      
+      let pages = [];
+      if (doc.pages && doc.pages.length > 0) {
+        pages = doc.pages;
+      } else if (doc.data && (doc.data.startsWith('data:image/') || doc.type.startsWith('image/'))) {
+        pages = [{ data: doc.data, width: 800, height: 600 }];
+      } else if (doc.data && (doc.data.startsWith('data:application/pdf') || doc.type === 'application/pdf')) {
+        const parts = doc.data.split(';base64,');
+        const base64Data = parts[1] || parts[0];
+        const binary = atob(base64Data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+          pages.push({
+            data: canvas.toDataURL('image/jpeg', 0.8),
+            width: viewport.width,
+            height: viewport.height
+          });
+        }
+      } else if (doc.url) {
+        pages = [{
+          isCloudLink: true,
+          url: doc.url,
+          name: doc.name
+        }];
+      }
+      
+      pages.forEach(p => {
+        p.docName = doc.name;
+        combinedPages.push(p);
+      });
+    }
+    
+    currentViewerDoc = {
+      name: `${clientName}_KYC_Documents.pdf`,
+      pages: combinedPages.filter(p => !p.isCloudLink)
+    };
+    
+    if (currentViewerDoc.pages.length > 0) {
+      document.getElementById('btnDownloadZip').style.display = 'inline-flex';
+      document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
+    } else {
+      document.getElementById('btnDownloadZip').style.display = 'none';
+      document.getElementById('btnDownloadPdf').style.display = 'none';
+    }
+    
+    pagesContainer.innerHTML = combinedPages.map((page, pIdx) => {
+      if (page.isCloudLink) {
+        return `
+          <div style="background: #1e2530; padding: 15px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px; text-align: center;">
+            <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color: var(--accent); margin-bottom: 8px;"></i>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text);">${page.name}</div>
+            <a href="${page.url}" target="_blank" class="btn btn-secondary" style="margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 10px;">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+            </a>
+          </div>
+        `;
+      }
+      
+      return `
+        <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px;">
+          <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600; display: flex; justify-content: space-between;">
+            <span>Page ${pIdx + 1} of ${combinedPages.length}</span>
+            <span style="color: var(--purple);"><i class="fa-solid fa-paperclip"></i> ${page.docName}</span>
+          </div>
+          <img src="${page.data}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="Page ${pIdx + 1}">
+        </div>
+      `;
+    }).join('');
+    
+  } catch (err) {
+    console.error("KYC Viewer rendering failed:", err);
+    pagesContainer.innerHTML = `
+      <div style="color: var(--text); padding: 40px;">
+        <i class="fa-solid fa-triangle-exclamation fa-3x" style="color: var(--orange); margin-bottom: 15px;"></i>
+        <h3>Failed to Load KYC Documents</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">${err.message || "One of the files could not be parsed."}</p>
+        <button class="btn btn-secondary" onclick="closeModal('documentViewerModal')">Close</button>
+      </div>
+    `;
   }
 }
 
