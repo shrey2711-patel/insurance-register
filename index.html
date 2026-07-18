@@ -1394,6 +1394,16 @@
           <option value="10">November</option>
           <option value="11">December</option>
         </select>
+
+        <!-- Sorting Selector -->
+        <select class="select-pill" id="sortFilter" onchange="currentPage = 1; applyFiltersAndStats()" style="border-color: var(--accent); color: var(--accent); font-weight: 600;">
+          <option value="expiry-asc">📅 Due Date: Ascending (Soonest Expiry)</option>
+          <option value="expiry-desc">📅 Due Date: Descending (Farthest Expiry)</option>
+          <option value="name-asc">👤 Name: A to Z</option>
+          <option value="name-desc">👤 Name: Z to A</option>
+          <option value="premium-desc">💰 Premium: High to Low</option>
+          <option value="premium-asc">💰 Premium: Low to High</option>
+        </select>
         
         <!-- Interactive Date Simulator Tool -->
         <div style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px;">
@@ -1876,7 +1886,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.3.1";
+const CURRENT_VERSION = "1.4.0";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -3399,7 +3409,35 @@ function applyFiltersAndStats() {
     if (activeStatusFilter === '7') return ['today','days1','days3','days7'].includes(bucket);
     if (activeStatusFilter === 'unsent') return item.daysLeft <= 7 && !isSent;
     
-    return true;
+  });
+
+  // Sort the filtered data based on user selection
+  const sortBy = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'expiry-asc';
+  
+  filteredData.sort((a, b) => {
+    if (sortBy === 'expiry-asc') {
+      return a.daysLeft - b.daysLeft;
+    }
+    if (sortBy === 'expiry-desc') {
+      return b.daysLeft - a.daysLeft;
+    }
+    if (sortBy === 'name-asc') {
+      return (a.name || '').localeCompare(b.name || '', 'en', { sensitivity: 'base' });
+    }
+    if (sortBy === 'name-desc') {
+      return (b.name || '').localeCompare(a.name || '', 'en', { sensitivity: 'base' });
+    }
+    if (sortBy === 'premium-desc') {
+      const amtA = Number(a.amount) || 0;
+      const amtB = Number(b.amount) || 0;
+      return amtB - amtA;
+    }
+    if (sortBy === 'premium-asc') {
+      const amtA = Number(a.amount) || 0;
+      const amtB = Number(b.amount) || 0;
+      return amtA - amtB;
+    }
+    return 0;
   });
 
   renderTable(sentSet);
