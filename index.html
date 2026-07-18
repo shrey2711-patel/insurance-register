@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.9";
+const CURRENT_VERSION = "1.8.0";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4832,8 +4832,8 @@ async function uploadPolicyToFirebase(entry) {
         ? JSON.stringify(entry.policy_doc.pages).length
         : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
 
-      // Keep inline only if it is under 600KB
-      const isInline = sizeToCheck < 600000;
+      // Keep inline only if it is under 800KB
+      const isInline = sizeToCheck < 800000;
       const isNewUpload = (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
         (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url);
 
@@ -4843,7 +4843,7 @@ async function uploadPolicyToFirebase(entry) {
           cloudEntry.policy_doc = entry.policy_doc;
           totalInlineSize += sizeToCheck;
         } else {
-          // If it exceeds 600KB, upload to Storage/Drive
+          // If it exceeds 800KB, upload to Storage/Drive
           try {
             if (isGoogleDrive) {
               showToast("☁️ Uploading Policy PDF to Google Drive...");
@@ -4896,8 +4896,8 @@ async function uploadPolicyToFirebase(entry) {
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
 
-          // Save inline only if the cumulative inline size stays under 600KB
-          const isInline = (totalInlineSize + sizeToCheck) < 600000;
+          // Save inline only if the cumulative inline size stays under 800KB
+          const isInline = (totalInlineSize + sizeToCheck) < 800000;
           const isNewUpload = (doc.data && doc.data.startsWith('data:')) ||
             (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
 
@@ -4949,7 +4949,7 @@ async function uploadPolicyToFirebase(entry) {
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
 
-          if (sizeToCheck < 600000) {
+          if (sizeToCheck < 800000) {
             fallbackDocs.push(doc);
           } else {
             fallbackDocs.push({
