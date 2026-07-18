@@ -60,7 +60,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: radial-gradient(circle at 0% 0%, #f0f4f8 0%, #f4f7fa 50%), 
+    background: radial-gradient(circle at 0% 0%, #f0f4f8 0%, #f4f7fa 50%),
                 radial-gradient(circle at 100% 100%, #e0ebf6 0%, #f4f7fa 50%);
     background-attachment: fixed;
     color: var(--text);
@@ -394,10 +394,10 @@
     white-space: nowrap;
   }
   .btn i { font-size: 14px; }
-  
+
   .btn-primary { background: var(--accent); color: var(--text-dark); }
   .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
-  
+
   .btn-secondary { background: #ffffff; border-color: var(--border); color: var(--text); }
   .btn-secondary:hover { background: rgba(0, 0, 0, 0.04); border-color: var(--text-muted); }
 
@@ -826,8 +826,8 @@
     border-color: var(--accent) !important;
     color: var(--accent) !important;
   }
-  .flatpickr-day.selected, 
-  .flatpickr-day.selected:focus, 
+  .flatpickr-day.selected,
+  .flatpickr-day.selected:focus,
   .flatpickr-day.selected:hover,
   .flatpickr-day.prevMonthDay.selected,
   .flatpickr-day.nextMonthDay.selected {
@@ -919,7 +919,7 @@
   .security-overlay {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: radial-gradient(circle at 0% 0%, #f0f4f8 0%, #f4f7fa 50%), 
+    background: radial-gradient(circle at 0% 0%, #f0f4f8 0%, #f4f7fa 50%),
                 radial-gradient(circle at 100% 100%, #e0ebf6 0%, #f4f7fa 50%);
     z-index: 10000;
     display: flex;
@@ -928,7 +928,7 @@
     backdrop-filter: blur(20px);
     transition: opacity 0.3s ease;
   }
-  
+
   .security-card {
     background: #ffffff;
     border: 1px solid var(--border);
@@ -942,26 +942,26 @@
     gap: 20px;
     text-align: center;
   }
-  
+
   .security-card h2 {
     font-size: 20px;
     font-weight: 700;
     color: var(--text);
   }
-  
+
   .security-card p {
     font-size: 13px;
     color: var(--text-muted);
     line-height: 1.5;
   }
-  
+
   .otp-inputs-wrap {
     display: flex;
     justify-content: center;
     gap: 8px;
     margin: 10px 0;
   }
-  
+
   .otp-input-cell {
     width: 44px;
     height: 48px;
@@ -976,13 +976,13 @@
     background: #f8fafc;
     transition: var(--transition);
   }
-  
+
   .otp-input-cell:focus {
     border-color: var(--accent);
     background: #ffffff;
     box-shadow: 0 0 8px var(--accent-glow);
   }
-  
+
   .otp-method-btn {
     display: flex;
     align-items: center;
@@ -999,12 +999,12 @@
     width: 100%;
     color: var(--text);
   }
-  
+
   .otp-method-btn:hover {
     border-color: var(--accent);
     background: rgba(2, 132, 199, 0.02);
   }
-  
+
   .otp-method-btn i {
     font-size: 18px;
     color: var(--accent);
@@ -1025,7 +1025,7 @@
     top: 0;
     z-index: 150;
   }
-  
+
   #sidebarToggleBtn, #mobileActionsBtn {
     background: none;
     border: none;
@@ -1039,11 +1039,11 @@
     border-radius: 8px;
     transition: background 0.2s, transform 0.15s;
   }
-  
+
   #sidebarToggleBtn:active, #mobileActionsBtn:active {
     transform: scale(0.92);
   }
-  
+
   #sidebarToggleBtn:hover, #mobileActionsBtn:hover {
     background: rgba(0,0,0,0.05);
   }
@@ -1072,7 +1072,7 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   .sidebar-overlay.active {
     display: block;
     opacity: 1;
@@ -1096,11 +1096,11 @@
     transform-origin: top right;
     animation: dropdownScale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  
+
   .mobile-actions-dropdown.active {
     display: flex;
   }
-  
+
   @keyframes dropdownScale {
     from { opacity: 0; transform: scale(0.95) translateY(-5px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1122,7 +1122,7 @@
     gap: 10px;
     transition: background 0.15s, color 0.15s;
   }
-  
+
   .dropdown-item:hover {
     background: rgba(16, 185, 129, 0.05);
     color: var(--accent);
@@ -1132,11 +1132,11 @@
     .app-container {
       grid-template-columns: 1fr !important;
     }
-    
+
     .mobile-header {
       display: flex;
     }
-    
+
     aside {
       position: fixed !important;
       top: 0;
@@ -1150,7 +1150,7 @@
       border-right: 1px solid var(--border) !important;
       border-bottom: none !important;
     }
-    
+
     aside.active {
       left: 0 !important;
     }
@@ -1283,7 +1283,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebarDrawer()"></div>
 
 <div class="app-container">
-  
+
   <!-- SIDEBAR PANELS -->
   <aside id="appSidebar">
     <!-- Close button for mobile drawer -->
@@ -1341,7 +1341,7 @@
 
   <!-- MAIN WORKSPACE -->
   <main>
-    
+
     <!-- STATS DASHBOARD -->
     <div class="stats-grid">
       <div class="card stat-card rev-card" style="--stat-color: var(--accent);">
@@ -1412,7 +1412,7 @@
           <option value="premium-desc">💰 Premium: High to Low</option>
           <option value="premium-asc">💰 Premium: Low to High</option>
         </select>
-        
+
         <!-- Interactive Date Simulator Tool -->
         <div style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px;">
           <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Simulate Date:</span>
@@ -1482,7 +1482,7 @@
           </button>
         </div>
       </div>
-      
+
       <!-- EMPTY STATE -->
       <div class="empty" id="emptyRegisterState" style="display: none;">
         <i class="fa-regular fa-folder-open"></i>
@@ -1799,7 +1799,7 @@
           </label>
         </div>
         <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Sync policies, PDFs, and KYC documents in real time across multiple computers or mobile phones securely.</p>
-        
+
         <div id="firebaseConfigFields" style="display:none; margin-top:12px;">
           <div style="display:flex; gap:10px;">
             <button type="button" class="btn btn-secondary" onclick="testFirebaseCloudConnection()" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border-color:var(--amber); color:var(--amber); background:rgba(217,119,6,0.05);"><i class="fa-solid fa-circle-nodes"></i> Test Connection</button>
@@ -1807,7 +1807,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Google Drive File Upload -->
       <div style="padding-top:14px; margin-top:14px; border-top:1px dashed var(--border);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -1818,7 +1818,7 @@
           </label>
         </div>
         <p style="font-size:10.5px; color:var(--text-muted); margin-bottom:10px;">Store PDFs and images securely inside a Google Drive folder using a Google Apps Script Web App. If enabled, this replaces Firebase Storage for files.</p>
-        
+
         <div id="googleDriveFields" style="display:none;">
           <div class="form-row">
             <div class="form-group" style="flex:2;">
@@ -1983,7 +1983,7 @@ function initDatabase() {
   request.onsuccess = function(e) {
     dbInstance = e.target.result;
     logActivity("🗄️ Permanent database (IndexedDB) connected successfully.", "info");
-    
+
     // Load records and run migrations
     loadAllRecordsFromDB();
   };
@@ -2006,11 +2006,11 @@ function initDatabase() {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   const todayStr = `${year}-${month}-${day}`;
-  
+
   document.getElementById('dateSimulator').value = todayStr;
   SIMULATED_TODAY = new Date(d);
   SIMULATED_TODAY.setHours(0,0,0,0);
-  
+
   // Set default message template if not set
   if (!storage.getItem('whatsapp_template')) {
     const defaultTemplate = `Dear {name},\n\nThis is a friendly reminder that the insurance for your vehicle {vehicle} ({plate}) {expiry_status}.\n\n🚗 Vehicle: {vehicle}\n🔖 Plate Number: {plate}\n🏢 Provider: {insurance}\n📅 Expiry Date: {expiry}\n\nRemarks/Notes: {remarks}\n\nPlease renew at your earliest convenience to avoid penalties.\n\nThank you for choosing us!`;
@@ -2025,7 +2025,7 @@ function initDatabase() {
 function loadAllRecordsFromDB() {
   const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
   const store = transaction.objectStore(STORE_NAME);
-  
+
   // Migration check: check if localStorage has data to migrate
   const localData = storage.getItem('insurance_ledger');
   if (localData) {
@@ -2052,13 +2052,13 @@ function loadAllRecordsFromDB() {
       console.error("Migration failed: ", e);
     }
   }
-  
+
   // Load local IndexedDB records first!
   const req = store.getAll();
   req.onsuccess = function(e) {
     const rawData = e.target.result || [];
     let hasMigration = false;
-    
+
     // Migrate any legacy numeric IDs to string IDs
     rawData.forEach(item => {
       if (typeof item.id === 'number') {
@@ -2069,27 +2069,27 @@ function loadAllRecordsFromDB() {
         hasMigration = true;
       }
     });
-    
+
     if (hasMigration) {
       logActivity("🗄️ Database migration: converted legacy record numeric IDs to string IDs", "info");
       loadAllRecordsFromDB(); // Reload updated records
       return;
     }
-    
+
     DATA = rawData;
     applyFiltersAndStats();
-    
+
     // Cloud Sync pull check
     const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
     if (isCloudEnabled && initFirebase()) {
       logActivity("☁️ Connecting to cloud registry sync...", "info");
-      
+
       let isFirstLoad = true;
-      
+
       dbCloud.collection("policies").onSnapshot((querySnapshot) => {
         if (isFirstLoad) {
           isFirstLoad = false;
-          
+
           if (querySnapshot.empty && DATA.length > 0) {
             // Cloud is empty, but local has data!
             // Automatically push all local records to the cloud!
@@ -2100,17 +2100,17 @@ function loadAllRecordsFromDB() {
             return;
           }
         }
-        
+
         const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         let hasChanges = false;
-        
+
         querySnapshot.docChanges().forEach((change) => {
           const doc = change.doc;
           const cloudItem = doc.data();
           cloudItem.id = doc.id;
           const docIdStr = String(cloudItem.id);
-          
+
           // Exclude legacy 2025 entries
           const expYear = new Date(cloudItem.end_date).getFullYear();
           if (expYear === 2025) {
@@ -2124,16 +2124,16 @@ function loadAllRecordsFromDB() {
             dbCloud.collection("policies").doc(doc.id).delete().catch(()=>{});
             return;
           }
-          
+
           if (change.type === "added" || change.type === "modified") {
             if (uploadingDocIds.has(docIdStr)) {
               // Retain local unsynced copy while uploading is in progress
               return;
             }
-            
+
             const localIndex = DATA.findIndex(item => String(item.id) === docIdStr);
             const localItem = localIndex > -1 ? DATA[localIndex] : null;
-            
+
             let mergedItem = { ...cloudItem };
             if (localItem) {
               if (cloudItem.policy_doc && cloudItem.policy_doc.localOnly) {
@@ -2144,7 +2144,7 @@ function loadAllRecordsFromDB() {
                   };
                 }
               }
-              
+
               if (Array.isArray(cloudItem.kyc_docs)) {
                 mergedItem.kyc_docs = cloudItem.kyc_docs.map((cloudKyc, kIdx) => {
                   if (cloudKyc && cloudKyc.localOnly) {
@@ -2161,17 +2161,17 @@ function loadAllRecordsFromDB() {
                 mergedItem.kyc_doc = mergedItem.kyc_docs.length > 0 ? mergedItem.kyc_docs[0] : null;
               }
             }
-            
+
             if (localIndex > -1) {
               DATA[localIndex] = mergedItem;
             } else {
               DATA.push(mergedItem);
             }
-            
+
             store.put(mergedItem);
             hasChanges = true;
           }
-          
+
           if (change.type === "removed") {
             const localIndex = DATA.findIndex(item => String(item.id) === docIdStr);
             if (localIndex > -1) {
@@ -2181,13 +2181,13 @@ function loadAllRecordsFromDB() {
             hasChanges = true;
           }
         });
-        
+
         transaction.oncomplete = function() {
           if (hasChanges) {
             applyFiltersAndStats();
           }
         };
-        
+
         logActivity(`☁️ Cloud Synced: Incremental live sync completed.`, "info");
       }, (err) => {
         console.error("Firebase read error: ", err);
@@ -2201,7 +2201,7 @@ function fetchRecords(store) {
   const req = store.getAll();
   req.onsuccess = function(e) {
     DATA = e.target.result || [];
-    
+
     // Dynamic cleanup: clear any 2025 records
     const originalLength = DATA.length;
     const keptRecords = [];
@@ -2214,11 +2214,11 @@ function fetchRecords(store) {
         keptRecords.push(item);
       }
     });
-    
+
     if (removedRecords.length > 0) {
       DATA = keptRecords;
       saveAllToIndexedDB(false, false); // Save kept ones locally (no need to sync back to cloud since they are already there)
-      
+
       // Delete removed ones from cloud
       const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
       if (isCloudEnabled && firebaseInitialized) {
@@ -2237,7 +2237,7 @@ function fetchRecords(store) {
       }
       setTimeout(() => logActivity(`🗑️ dynamic cleanup: Cleared ${removedRecords.length} old 2025 records.`, "err"), 100);
     }
-    
+
     applyFiltersAndStats();
   };
 }
@@ -2269,7 +2269,7 @@ function saveAllToIndexedDB(syncToCloud = false, isOverwrite = false) {
       }
       const req = store.add(item);
       req.onsuccess = function(e) {
-        
+
         if (syncToCloud) {
           if (isOverwrite || item._isNew) {
             delete item._isNew; // clean up temp flag
@@ -2299,7 +2299,7 @@ function compressImageBase64(file) {
         const maxHeight = 1600;
         let width = img.width;
         let height = img.height;
-        
+
         if (width > maxWidth || height > maxHeight) {
           if (width > height) {
             height = Math.round((height * maxWidth) / width);
@@ -2309,13 +2309,13 @@ function compressImageBase64(file) {
             height = maxHeight;
           }
         }
-        
+
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(compressedDataUrl);
       };
@@ -2340,7 +2340,7 @@ function compressPdfToPages(file) {
         const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
         const numPages = pdf.numPages;
         const pages = [];
-        
+
         // Dynamically optimize scale & quality based on total pages to stay under ~200KB total if possible
         let scale = 2.0;
         let quality = 0.65;
@@ -2353,7 +2353,7 @@ function compressPdfToPages(file) {
             quality = 0.45;
           }
         }
-        
+
         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
           const viewport = page.getViewport({ scale: scale });
@@ -2361,15 +2361,15 @@ function compressPdfToPages(file) {
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           const ctx = canvas.getContext('2d');
-          
+
           const renderContext = {
             canvasContext: ctx,
             viewport: viewport
           };
-          
+
           await page.render(renderContext).promise;
           const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-          
+
           pages.push({
             data: compressedDataUrl,
             width: viewport.width,
@@ -2393,7 +2393,7 @@ function getFileData(fileInput) {
       resolve(null);
       return;
     }
-    
+
     // Check if image for auto-compression
     if (file.type.startsWith('image/')) {
       const compressedData = await compressImageBase64(file);
@@ -2404,13 +2404,13 @@ function getFileData(fileInput) {
       });
       return;
     }
-    
+
     // Check if PDF for auto-compression
     if (file.type === 'application/pdf') {
       try {
         showToast("📄 Compressing all pages of PDF...");
         const pages = await compressPdfToPages(file);
-        
+
         resolve({
           name: file.name,
           type: 'application/pdf',
@@ -2422,7 +2422,7 @@ function getFileData(fileInput) {
         console.warn("PDF compression failed, falling back to original PDF upload:", err);
       }
     }
-    
+
     // Check file size limits (Allow up to 10MB universally)
     const limit = 10 * 1024 * 1024;
     if (file.size > limit) {
@@ -2430,7 +2430,7 @@ function getFileData(fileInput) {
       resolve(null);
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
       resolve({
@@ -2454,14 +2454,14 @@ function getMultipleFilesData(fileInput) {
       resolve([]);
       return;
     }
-    
+
     const results = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       let docData = null;
       let finalType = file.type;
       let finalName = file.name;
-      
+
       if (file.type.startsWith('image/')) {
         docData = await compressImageBase64(file);
         finalType = 'image/jpeg';
@@ -2491,7 +2491,7 @@ function getMultipleFilesData(fileInput) {
           showToast(`⚠️ File "${file.name}" exceeds the 10MB limit!`, true);
           continue;
         }
-        
+
         docData = await new Promise((resolveFile) => {
           const reader = new FileReader();
           reader.onload = function(e) {
@@ -2503,7 +2503,7 @@ function getMultipleFilesData(fileInput) {
           reader.readAsDataURL(file);
         });
       }
-      
+
       if (docData) {
         results.push({
           name: finalName,
@@ -2524,7 +2524,7 @@ function previewUploadFile(input, previewId) {
     let sizeStr = '';
     if (file.size > 1024 * 1024) sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
     else sizeStr = (file.size / 1024).toFixed(1) + ' KB';
-    
+
     label.innerHTML = `<i class="fa-solid fa-file-circle-check" style="color:var(--accent);"></i> ${file.name} (${sizeStr})`;
   } else {
     label.textContent = "No file attached";
@@ -2554,19 +2554,102 @@ function previewUploadFilesMultiple(input, previewId) {
 let currentViewerDoc = null;
 let currentViewerClientName = '';
 
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function getDocType(doc) {
+  return (doc && doc.type) ? String(doc.type) : '';
+}
+
+function getDocName(doc) {
+  return (doc && doc.name) ? String(doc.name) : 'Document';
+}
+
+function isImageDocument(doc) {
+  const type = getDocType(doc);
+  const name = getDocName(doc);
+  const url = doc && doc.url ? String(doc.url) : '';
+  return type.startsWith('image/') ||
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(name) ||
+    /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/i.test(url);
+}
+
+function isPdfDocument(doc) {
+  const type = getDocType(doc);
+  const name = getDocName(doc);
+  const url = doc && doc.url ? String(doc.url) : '';
+  return type === 'application/pdf' ||
+    /\.pdf$/i.test(name) ||
+    /\.pdf(\?|#|$)/i.test(url);
+}
+
+function getCloudPdfViewerUrl(url) {
+  return /drive\.google\.com/i.test(url)
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+    : url;
+}
+
+function buildCloudPreviewHtml(doc) {
+  const name = escapeHtml(getDocName(doc));
+  const url = doc && doc.url ? String(doc.url) : '';
+  const safeUrl = escapeHtml(url);
+
+  if (isImageDocument(doc)) {
+    return `
+      <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 650px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin: 0 auto;">
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px; text-align: left; font-weight: 600;">${name}</div>
+        <img src="${safeUrl}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="${name}">
+      </div>
+    `;
+  }
+
+  if (isPdfDocument(doc)) {
+    const viewerUrl = escapeHtml(getCloudPdfViewerUrl(url));
+    return `
+      <div style="width: 100%; max-width: 760px; margin: 0 auto; background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px; text-align: left; font-weight: 600;">${name}</div>
+        <iframe src="${viewerUrl}" style="width: 100%; height: 68vh; min-height: 480px; border: none; border-radius: 4px; background: white;"></iframe>
+        <div style="display:flex; justify-content:center; gap:8px; margin-top:10px; flex-wrap:wrap;">
+          <a href="${safeUrl}" target="_blank" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:5px 10px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Original
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="color: var(--text); padding: 40px;">
+      <i class="fa-solid fa-cloud-arrow-up fa-3x" style="color: var(--accent); margin-bottom: 15px;"></i>
+      <h3>Cloud Document</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Preview is not available for this file type.</p>
+      <a href="${safeUrl}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+      </a>
+    </div>
+  `;
+}
+
 async function downloadAllPagesAsZip() {
   if (!currentViewerDoc || !currentViewerDoc.pages) return;
   showToast("📦 Creating ZIP file...");
   try {
     const zip = new JSZip();
     const nameNoExt = currentViewerDoc.name.substring(0, currentViewerDoc.name.lastIndexOf('.')) || currentViewerDoc.name;
-    
+
     currentViewerDoc.pages.forEach((page, idx) => {
       const parts = page.data.split(';base64,');
       const base64Data = parts[1];
       zip.file(`${nameNoExt}_page_${idx + 1}.jpg`, base64Data, { base64: true });
     });
-    
+
     const content = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
@@ -2585,7 +2668,7 @@ async function downloadAllPagesAsZip() {
 
 function downloadAllPagesAsPdf() {
   if (!currentViewerDoc) return;
-  
+
   if (currentViewerDoc.url && !currentViewerDoc.isMultiPageCloud) {
     showToast("📥 Downloading cloud file...");
     const a = document.createElement('a');
@@ -2597,24 +2680,24 @@ function downloadAllPagesAsPdf() {
     document.body.removeChild(a);
     return;
   }
-  
+
   if (!currentViewerDoc.pages) return;
   showToast("📄 Creating merged PDF...");
   try {
     const { jsPDF } = window.jspdf;
     const pages = currentViewerDoc.pages;
     const firstPage = pages[0];
-    
+
     const orientation = firstPage.width > firstPage.height ? 'l' : 'p';
     const doc = new jsPDF(orientation, 'px', [firstPage.width, firstPage.height]);
-    
+
     pages.forEach((page, idx) => {
       if (idx > 0) {
         doc.addPage([page.width, page.height], page.width > page.height ? 'l' : 'p');
       }
       doc.addImage(page.data, 'JPEG', 0, 0, page.width, page.height);
     });
-    
+
     doc.save(currentViewerDoc.name);
     showToast("📥 PDF downloaded!");
   } catch (err) {
@@ -2627,13 +2710,13 @@ function downloadAllPagesAsPdf() {
 function downloadDoc(idx, type) {
   const item = DATA[idx];
   let doc = null;
-  
+
   if (type === 'policy') {
     doc = item.policy_doc;
   } else {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
-    
+
     if (docs.length === 1) {
       doc = docs[0];
     } else {
@@ -2641,7 +2724,7 @@ function downloadDoc(idx, type) {
       return;
     }
   }
-  
+
   if (!doc) return;
   loadAndShowDocumentInViewer(doc, item.name);
 }
@@ -2649,18 +2732,23 @@ function downloadDoc(idx, type) {
 async function loadAndShowDocumentInViewer(doc, clientName) {
   currentViewerDoc = doc;
   currentViewerClientName = clientName;
-  
+
   // Set title
-  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> ${doc.name} — ${clientName}`;
-  
+  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> ${escapeHtml(getDocName(doc))} — ${escapeHtml(clientName)}`;
+
   const pagesContainer = document.getElementById('docViewerPagesContainer');
   pagesContainer.innerHTML = `<div style="color: var(--text); padding: 40px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i><br/>Loading document...</div>`;
-  
+  document.getElementById('btnDownloadPdf').style.display = 'none';
+
   openModal('documentViewerModal');
-  
+
   try {
     let pagesToRender = [];
-    
+
+    if (doc.localOnly && !doc.data && !doc.url) {
+      throw new Error("This file is stored only on the device that uploaded it.");
+    }
+
     // Case 0: Multi-page document stored in cloud as JSON
     if (doc.isMultiPageCloud && doc.url) {
       showToast("☁️ Loading pages from cloud...");
@@ -2681,16 +2769,16 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
         if (!response.ok) throw new Error(response.statusText);
         jsonStr = await response.text();
       }
-      
+
       pagesToRender = JSON.parse(jsonStr);
       currentViewerDoc.pages = pagesToRender;
     }
     // Case 1: Pre-rendered multi-page pages array
     else if (doc.pages && doc.pages.length > 0) {
       pagesToRender = doc.pages;
-    } 
+    }
     // Case 2: Base64 image
-    else if (doc.data && (doc.data.startsWith('data:image/') || doc.type.startsWith('image/'))) {
+    else if (doc.data && (doc.data.startsWith('data:image/') || getDocType(doc).startsWith('image/'))) {
       pagesToRender = [{
         data: doc.data,
         width: 800,
@@ -2700,7 +2788,7 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
       currentViewerDoc.pages = pagesToRender;
     }
     // Case 3: Base64 PDF (old uploads)
-    else if (doc.data && (doc.data.startsWith('data:application/pdf') || doc.type === 'application/pdf')) {
+    else if (doc.data && (doc.data.startsWith('data:application/pdf') || getDocType(doc) === 'application/pdf')) {
       showToast("📄 Rendering PDF pages...");
       const parts = doc.data.split(';base64,');
       const base64Data = parts[1] || parts[0];
@@ -2709,11 +2797,11 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
       for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
       }
-      
+
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
       const numPages = pdf.numPages;
       pagesToRender = [];
-      
+
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.5 });
@@ -2721,7 +2809,7 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d');
-        
+
         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
         pagesToRender.push({
           data: canvas.toDataURL('image/jpeg', 0.8),
@@ -2734,59 +2822,28 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
     }
     // Case 4: Cloud URL (firebase storage/google drive)
     else if (doc.url) {
-      const isImage = (doc.type && doc.type.startsWith('image/')) || 
-        /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.name) || 
-        /\.(jpg|jpeg|png|webp|gif)/i.test(doc.url);
-        
-      const isPdf = (doc.type === 'application/pdf') || 
-        /\.pdf$/i.test(doc.name) || 
-        /\.pdf/i.test(doc.url);
-        
-      if (isImage) {
-        pagesContainer.innerHTML = `
-          <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin: 0 auto;">
-            <img src="${doc.url}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="${doc.name}">
-          </div>
-        `;
-      } else if (isPdf) {
-        pagesContainer.innerHTML = `
-          <div style="width: 100%; max-width: 700px; margin: 0 auto; background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-            <iframe src="https://docs.google.com/viewer?url=${encodeURIComponent(doc.url)}&embedded=true" style="width: 100%; height: 500px; border: none; border-radius: 4px; background: white;"></iframe>
-          </div>
-        `;
-      } else {
-        pagesContainer.innerHTML = `
-          <div style="color: var(--text); padding: 40px;">
-            <i class="fa-solid fa-cloud-arrow-up fa-3x" style="color: var(--accent); margin-bottom: 15px;"></i>
-            <h3>Cloud Document</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">This document is stored securely in the cloud.</p>
-            <a href="${doc.url}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
-            </a>
-          </div>
-        `;
-      }
-      
+      pagesContainer.innerHTML = buildCloudPreviewHtml(doc);
+
       // Enable PDF download button since it's a cloud link
       document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
       return;
     }
-    
+
     // If no pages were rendered, show error
     if (pagesToRender.length === 0) {
       throw new Error("No pages found or could not render document.");
     }
-    
+
     // Enable PDF download button
     document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
-    
+
     pagesContainer.innerHTML = pagesToRender.map((page, pIdx) => `
       <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px;">
         <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600;">Page ${pIdx + 1} of ${pagesToRender.length}</div>
         <img src="${page.data}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="Page ${pIdx + 1}">
       </div>
     `).join('');
-    
+
   } catch (err) {
     console.error("Viewer rendering failed:", err);
     pagesContainer.innerHTML = `
@@ -2803,21 +2860,27 @@ async function loadAndShowDocumentInViewer(doc, clientName) {
 }
 
 async function showCombinedKycViewer(docs, clientName) {
-  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-id-card" style="color:var(--purple);"></i> KYC Documents — ${clientName}`;
-  
+  document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-id-card" style="color:var(--purple);"></i> KYC Documents — ${escapeHtml(clientName)}`;
+
   const pagesContainer = document.getElementById('docViewerPagesContainer');
   pagesContainer.innerHTML = `<div style="color: var(--text); padding: 40px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i><br/>Loading KYC Documents...</div>`;
-  
+  document.getElementById('btnDownloadPdf').style.display = 'none';
+
   openModal('documentViewerModal');
-  
+
   try {
     let combinedPages = [];
-    
+
     for (let dIdx = 0; dIdx < docs.length; dIdx++) {
       const doc = docs[dIdx];
-      
+
       let pages = [];
-      if (doc.pages && doc.pages.length > 0) {
+      if (doc.localOnly && !doc.data && !doc.url) {
+        pages = [{
+          isMissingLocal: true,
+          name: getDocName(doc)
+        }];
+      } else if (doc.pages && doc.pages.length > 0) {
         pages = doc.pages;
       } else if (doc.isMultiPageCloud && doc.url) {
         try {
@@ -2842,9 +2905,9 @@ async function showCombinedKycViewer(docs, clientName) {
         } catch (fetchErr) {
           console.warn("Failed to fetch cloud KYC pages:", fetchErr);
         }
-      } else if (doc.data && (doc.data.startsWith('data:image/') || doc.type.startsWith('image/'))) {
+      } else if (doc.data && (doc.data.startsWith('data:image/') || getDocType(doc).startsWith('image/'))) {
         pages = [{ data: doc.data, width: 800, height: 600 }];
-      } else if (doc.data && (doc.data.startsWith('data:application/pdf') || doc.type === 'application/pdf')) {
+      } else if (doc.data && (doc.data.startsWith('data:application/pdf') || getDocType(doc) === 'application/pdf')) {
         const parts = doc.data.split(';base64,');
         const base64Data = parts[1] || parts[0];
         const binary = atob(base64Data);
@@ -2871,51 +2934,58 @@ async function showCombinedKycViewer(docs, clientName) {
         pages = [{
           isCloudLink: true,
           url: doc.url,
-          name: doc.name
+          name: getDocName(doc),
+          doc: doc
         }];
       }
-      
+
       pages.forEach(p => {
-        p.docName = doc.name;
+        p.docName = getDocName(doc);
         combinedPages.push(p);
       });
     }
-    
+
     currentViewerDoc = {
       name: `${clientName}_KYC_Documents.pdf`,
       pages: combinedPages.filter(p => !p.isCloudLink)
     };
-    
+
     if (currentViewerDoc.pages.length > 0) {
       document.getElementById('btnDownloadPdf').style.display = 'inline-flex';
     } else {
       document.getElementById('btnDownloadPdf').style.display = 'none';
     }
-    
+
     pagesContainer.innerHTML = combinedPages.map((page, pIdx) => {
       if (page.isCloudLink) {
         return `
-          <div style="background: #1e2530; padding: 15px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px; text-align: center;">
-            <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color: var(--accent); margin-bottom: 8px;"></i>
-            <div style="font-size: 12px; font-weight: 600; color: var(--text);">${page.name}</div>
-            <a href="${page.url}" target="_blank" class="btn btn-secondary" style="margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 10px;">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
-            </a>
+          <div style="width: 100%; margin-bottom:15px;">
+            ${buildCloudPreviewHtml(page.doc || { name: page.name, url: page.url })}
           </div>
         `;
       }
-      
+
+      if (page.isMissingLocal) {
+        return `
+          <div style="background: #1e2530; padding: 18px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px; text-align: center;">
+            <i class="fa-solid fa-shield-halved fa-2x" style="color: var(--orange); margin-bottom: 8px;"></i>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text);">${escapeHtml(page.name)}</div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">This file is stored only on the device that uploaded it.</p>
+          </div>
+        `;
+      }
+
       return `
         <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px;">
           <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600; display: flex; justify-content: space-between;">
             <span>Page ${pIdx + 1} of ${combinedPages.length}</span>
-            <span style="color: var(--purple);"><i class="fa-solid fa-paperclip"></i> ${page.docName}</span>
+            <span style="color: var(--purple);"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(page.docName)}</span>
           </div>
           <img src="${page.data}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="Page ${pIdx + 1}">
         </div>
       `;
     }).join('');
-    
+
   } catch (err) {
     console.error("KYC Viewer rendering failed:", err);
     pagesContainer.innerHTML = `
@@ -2936,27 +3006,27 @@ function triggerFileDownload(doc, clientName) {
     showToast(`Opening: ${doc.name}`);
     return;
   }
-  
+
   if (doc.localOnly || !doc.data) {
     showToast("⚠️ This file is stored locally on the device that uploaded it (Cloud Storage is disabled). Please ask them to share it directly or upgrade the Firebase plan.", true);
     logActivity(`⚠️ Failed to download document: ${doc.name} (stored locally on uploading device)`, "err");
     return;
   }
-  
+
   try {
     const parts = doc.data.split(';base64,');
     const contentType = parts[0].split(':')[1];
     const raw = window.atob(parts[1]);
     const rawLength = raw.length;
     const uInt8Array = new Uint8Array(rawLength);
-    
+
     for (let i = 0; i < rawLength; ++i) {
       uInt8Array[i] = raw.charCodeAt(i);
     }
-    
+
     const blob = new Blob([uInt8Array], { type: contentType });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = doc.name;
@@ -2964,7 +3034,7 @@ function triggerFileDownload(doc, clientName) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     logActivity(`📥 Downloaded document: ${doc.name} for client ${clientName}`, "info");
     showToast(`Downloading: ${doc.name}`);
   } catch(e) {
@@ -2978,13 +3048,13 @@ function logActivity(text, type = "default") {
   const ledger = document.getElementById('activityLedger');
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
+
   const row = document.createElement('div');
   row.className = `ledger-row ${type}`;
   row.innerHTML = `<span class="time">[${timeStr}]</span> <span>${text}</span>`;
-  
+
   ledger.insertBefore(row, ledger.firstChild);
-  
+
   // Cap ledger items to 50
   if (ledger.childNodes.length > 50) {
     ledger.removeChild(ledger.lastChild);
@@ -3012,12 +3082,12 @@ function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  
+
   const day = String(d.getDate()).padStart(2, '0');
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = months[d.getMonth()];
   const year = d.getFullYear();
-  
+
   return `${day} ${month} ${year}`;
 }
 
@@ -3067,7 +3137,7 @@ function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   const icon = document.getElementById('toastIcon');
   document.getElementById('toastMsg').textContent = msg;
-  
+
   if (isError) {
     t.classList.add('err');
     icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
@@ -3075,7 +3145,7 @@ function showToast(msg, isError = false) {
     t.classList.remove('err');
     icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
   }
-  
+
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
@@ -3089,7 +3159,7 @@ function openAddModal() {
   document.getElementById('addPlate').value = '';
   document.getElementById('addInsurance').value = '';
   document.getElementById('addPolicyNo').value = '';
-  
+
   const addStart = document.getElementById('addStartDate');
   const addEnd = document.getElementById('addEndDate');
   if (addStart._flatpickr) addStart._flatpickr.clear();
@@ -3104,13 +3174,13 @@ function openAddModal() {
   document.getElementById('addAmount').value = '';
   document.getElementById('addPhone').value = '';
   document.getElementById('addNotes').value = '';
-  
+
   // Clear document files inputs and previews
   document.getElementById('addPolicyDoc').value = '';
   document.getElementById('addKycDoc').value = '';
   document.getElementById('addPolicyPreview').textContent = 'No file attached';
   document.getElementById('addKycPreview').textContent = 'No files attached';
-  
+
   openModal('addModal');
 }
 
@@ -3126,7 +3196,7 @@ async function submitAddEntry() {
   const phone = document.getElementById('addPhone').value.trim();
   const notes = document.getElementById('addNotes').value.trim();
   const dob = getFpValue('addDob');
-  
+
   const missing = [];
   if (!name) missing.push("Client Name");
   if (!vehicle) missing.push("Vehicle Model");
@@ -3134,16 +3204,16 @@ async function submitAddEntry() {
   if (!insurance) missing.push("Insurance Provider");
   if (!endDate) missing.push("Expiry Date");
   if (!phone) missing.push("Phone Number");
-  
+
   if (missing.length > 0) {
     showToast(`Missing mandatory (*) fields: ${missing.join(', ')}`, true);
     return;
   }
-  
+
   // Read document files
   const policyDoc = await getFileData(document.getElementById('addPolicyDoc'));
   const kycDocs = await getMultipleFilesData(document.getElementById('addKycDoc'));
-  
+
   const newEntry = {
     id: generateUniqueId(),
     name: name,
@@ -3161,17 +3231,17 @@ async function submitAddEntry() {
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility
   };
-  
+
   // Save to IndexedDB
   const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
   const store = transaction.objectStore(STORE_NAME);
   const req = store.add(newEntry);
-  
+
   req.onsuccess = async function(e) {
     newEntry.id = e.target.result; // Set autoincrement primary key
     DATA.push(newEntry);
     saveDatabase(); // reduntant fallback
-    
+
     // Cloud Sync write
     const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
     if (isCloudEnabled && firebaseInitialized) {
@@ -3180,13 +3250,13 @@ async function submitAddEntry() {
         showToast("⚠️ Cloud Sync Failed: Check file sizes or Firebase settings!", true);
       });
     }
-    
+
     closeModal('addModal');
     applyFiltersAndStats();
     showToast(`Successfully added record for ${name}!`);
     logActivity(`➕ Added daily policy register: ${name} (${formatPlateNumber(plate)})`, "info");
   };
-  
+
   req.onerror = function() {
     showToast("Failed to save to database!", true);
   };
@@ -3200,14 +3270,14 @@ function openEditModal(idx) {
   document.getElementById('editPlate').value = item.plate;
   document.getElementById('editInsurance').value = item.insurance;
   document.getElementById('editPolicyNo').value = item.policy_no || '';
-  
+
   const editStart = document.getElementById('editStartDate');
   const editEnd = document.getElementById('editEndDate');
   if (editStart._flatpickr) editStart._flatpickr.setDate(item.start_date || '');
   else editStart.value = item.start_date || '';
   if (editEnd._flatpickr) editEnd._flatpickr.setDate(item.end_date || '');
   else editEnd.value = item.end_date || '';
-  
+
   document.getElementById('editAmount').value = item.amount || '';
   document.getElementById('editPhone').value = item.phone;
   document.getElementById('editNotes').value = item.notes || '';
@@ -3215,11 +3285,11 @@ function openEditModal(idx) {
   const editDob = document.getElementById('editDob');
   if (editDob._flatpickr) editDob._flatpickr.setDate(item.dob || '');
   else editDob.value = item.dob || '';
-  
+
   // Reset file selectors
   document.getElementById('editPolicyDoc').value = '';
   document.getElementById('editKycDoc').value = '';
-  
+
   // Load existing files previews
   const policyPrev = document.getElementById('editPolicyPreview');
   if (item.policy_doc) {
@@ -3227,7 +3297,7 @@ function openEditModal(idx) {
   } else {
     policyPrev.textContent = "No file attached";
   }
-  
+
   const kycPrev = document.getElementById('editKycPreview');
   const kycDocs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
   if (kycDocs.length > 0) {
@@ -3236,7 +3306,7 @@ function openEditModal(idx) {
   } else {
     kycPrev.textContent = "No files attached";
   }
-  
+
   openModal('editModal');
 }
 
@@ -3253,7 +3323,7 @@ async function submitEditEntry() {
   const phone = document.getElementById('editPhone').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
   const dob = getFpValue('editDob');
-  
+
   const missing = [];
   if (!name) missing.push("Client Name");
   if (!vehicle) missing.push("Vehicle Model");
@@ -3261,24 +3331,24 @@ async function submitEditEntry() {
   if (!insurance) missing.push("Insurance Provider");
   if (!endDate) missing.push("Expiry Date");
   if (!phone) missing.push("Phone Number");
-  
+
   if (missing.length > 0) {
     showToast(`Missing mandatory (*) fields: ${missing.join(', ')}`, true);
     return;
   }
-  
+
   // Process attachments (preserve existing if no new ones are uploaded)
   let policyDoc = await getFileData(document.getElementById('editPolicyDoc'));
   if (!policyDoc && DATA[idx].policy_doc) {
     policyDoc = DATA[idx].policy_doc;
   }
-  
+
   let kycDocs = await getMultipleFilesData(document.getElementById('editKycDoc'));
   if (kycDocs.length === 0) {
     // Preserve existing kyc_docs if no new files selected
     kycDocs = Array.isArray(DATA[idx].kyc_docs) ? DATA[idx].kyc_docs : (DATA[idx].kyc_doc ? [DATA[idx].kyc_doc] : []);
   }
-  
+
   const updatedEntry = {
     ...DATA[idx],
     name: name,
@@ -3296,16 +3366,16 @@ async function submitEditEntry() {
     kyc_docs: kycDocs,
     kyc_doc: kycDocs.length > 0 ? kycDocs[0] : null // compatibility
   };
-  
+
   // Write to IndexedDB
   const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
   const store = transaction.objectStore(STORE_NAME);
   const req = store.put(updatedEntry);
-  
+
   req.onsuccess = async function() {
     DATA[idx] = updatedEntry;
     saveDatabase(); // redundant fallback
-    
+
     // Cloud Sync write
     const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
     if (isCloudEnabled && firebaseInitialized) {
@@ -3314,13 +3384,13 @@ async function submitEditEntry() {
         showToast("⚠️ Cloud Sync Failed: Check file sizes or Firebase settings!", true);
       });
     }
-    
+
     closeModal('editModal');
     applyFiltersAndStats();
     showToast(`Successfully updated register for ${name}`);
     logActivity("📝 Updated ledger entry: " + name + " (" + formatPlateNumber(plate) + ")", "info");
   };
-  
+
   req.onerror = function() {
     showToast("Failed to update database!", true);
   };
@@ -3332,11 +3402,11 @@ function deleteEntry(idx) {
     const name = itemToDelete.name;
     const plate = itemToDelete.plate;
     const dbId = itemToDelete.id;
-    
+
     const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const req = store.delete(dbId);
-    
+
     req.onsuccess = function() {
       // Cloud Sync delete
       const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
@@ -3350,14 +3420,14 @@ function deleteEntry(idx) {
           });
         }
       }
-      
+
       DATA.splice(idx, 1);
       saveDatabase(); // redundant fallback
       applyFiltersAndStats();
       showToast(`Removed policy register for ${name}`);
       logActivity(`❌ Deleted policy register: ${name} (${plate})`, "err");
     };
-    
+
     req.onerror = function() {
       showToast("Failed to delete from database!", true);
     };
@@ -3368,19 +3438,19 @@ function deleteEntry(idx) {
 function deleteSelected() {
   const checkboxes = document.querySelectorAll('.row-cb:checked');
   if (checkboxes.length === 0) return;
-  
+
   if (confirm(`Are you absolutely sure you want to delete ${checkboxes.length} selected policy records? This action is permanent!`)) {
     const idsToDelete = Array.from(checkboxes).map(cb => String(cb.dataset.id));
-    
+
     const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    
+
     const itemsToDelete = DATA.filter(item => idsToDelete.includes(String(item.id)));
-    
+
     itemsToDelete.forEach(item => {
       const dbId = item.id;
       store.delete(dbId);
-      
+
       // Cloud Sync delete
       const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
       if (isCloudEnabled && firebaseInitialized) {
@@ -3394,7 +3464,7 @@ function deleteSelected() {
         }
       }
     });
-    
+
     transaction.oncomplete = function() {
       // Safely filter local DATA array after transaction finishes successfully
       DATA = DATA.filter(item => !idsToDelete.includes(String(item.id)));
@@ -3404,7 +3474,7 @@ function deleteSelected() {
       showToast(`Wiped ${itemsToDelete.length} records successfully.`);
       logActivity(`🗑️ Bulk Deleted: ${itemsToDelete.length} records wiped from register ledger`, "err");
     };
-    
+
     transaction.onerror = function() {
       showToast("Failed to delete selected records from database!", true);
     };
@@ -3442,7 +3512,7 @@ function switchView(viewName) {
 
 function renderAnalyticsCharts() {
   const targetYear = document.getElementById('targetYearFilter').value;
-  
+
   // Filter active items for the target year
   const activeItems = DATA.filter(item => {
     const expDate = new Date(item.end_date);
@@ -3458,7 +3528,7 @@ function renderAnalyticsCharts() {
 
   const providerLabels = Object.keys(providerCounts);
   const providerData = Object.values(providerCounts);
-  
+
   // Custom provider color mapping matching tag classes
   const providerColors = {
     'TATA': '#2563eb',
@@ -3522,7 +3592,7 @@ function renderAnalyticsCharts() {
     const exp = new Date(item.end_date);
     exp.setHours(0,0,0,0);
     const diff = Math.ceil((exp - SIMULATED_TODAY) / 86400000);
-    
+
     if (diff < 0) expired++;
     else if (diff === 0) today++;
     else if (diff <= 3) urgent++;
@@ -3593,7 +3663,7 @@ function renderAnalyticsCharts() {
   });
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
+
   let totalPremiumExpiring = monthlyPremiums.reduce((a, b) => a + b, 0);
   document.getElementById('chartTimelineTotal').textContent = `Total Expiring Premium: ₹${totalPremiumExpiring.toLocaleString('en-IN')}`;
 
@@ -3706,10 +3776,10 @@ function updateSimulatedDate() {
   SIMULATED_TODAY = new Date(selectedDate);
   SIMULATED_TODAY.setHours(0,0,0,0);
   storage.setItem('simulated_date', selectedDate);
-  
+
   // Update Header Date label
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
-  
+
   applyFiltersAndStats();
   logActivity(`⏰ Register calendar simulated to: ${formatDate(selectedDate)}`, "info");
 }
@@ -3720,14 +3790,14 @@ function resetSimulatedDate() {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   const todayStr = `${year}-${month}-${day}`;
-  
+
   document.getElementById('dateSimulator').value = todayStr;
   storage.removeItem('simulated_date');
-  
+
   SIMULATED_TODAY = new Date(d);
   SIMULATED_TODAY.setHours(0,0,0,0);
   document.getElementById('todayDateLabel').textContent = SIMULATED_TODAY.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
-  
+
   applyFiltersAndStats();
   logActivity("⏰ Simulated calendar reset back to current actual system time.", "info");
 }
@@ -3744,10 +3814,10 @@ function applyFiltersAndStats() {
   const query = document.getElementById('searchBox').value.trim().toLowerCase();
   const selectedMonth = document.getElementById('monthFilter').value;
   const targetYear = document.getElementById('targetYearFilter').value;
-  
+
   // Track sent set
   const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
-  
+
   // Enrich items with computed statistics
   const enriched = DATA.map((item, idx) => {
     const exp = new Date(item.end_date);
@@ -3764,7 +3834,7 @@ function applyFiltersAndStats() {
   let incomingCount = 0;
   let birthdayCount = 0;
   let renewalsTodayCount = 0;
-  
+
   enriched.forEach(item => {
     // Check birthdays (independent of target year/month filter)
     if (isSameDayAndMonth(item.dob, SIMULATED_TODAY)) {
@@ -3778,12 +3848,12 @@ function applyFiltersAndStats() {
     // Only calculate stats for policies matches target year
     const yearMatch = targetYear === 'all' || (item.expDate.getFullYear() === Number(targetYear));
     if (!yearMatch) return;
-    
+
     if (item.daysLeft >= 0) {
       totalPremium += Number(item.amount) || 0;
       activePremiumCount++;
     }
-    
+
     if (item.daysLeft < 0) {
       expiredCount++;
     } else if (item.daysLeft <= 3) {
@@ -3792,7 +3862,7 @@ function applyFiltersAndStats() {
       incomingCount++;
     }
   });
-  
+
   // Update Stats UI
   document.getElementById('premiumValue').textContent = formatCurrency(totalPremium);
   document.getElementById('premiumCount').textContent = `${activePremiumCount} Active Policies`;
@@ -3843,7 +3913,7 @@ function applyFiltersAndStats() {
       const amount = String(item.amount || '');
       const phone = (item.phone || '').replace(/[^0-9]/g, '');
       const rawPhone = (item.phone || '').toLowerCase();
-      
+
       const startDate = (item.start_date || '');
       const endDate = (item.end_date || '');
       const dob = (item.dob || '');
@@ -3868,7 +3938,7 @@ function applyFiltersAndStats() {
                    formattedDob.includes(query);
     }
     if (!queryMatch) return false;
-    
+
     // Status Filter Check - Birthday overrides month and year filters
     if (activeStatusFilter === 'birthday') {
       return isSameDayAndMonth(item.dob, SIMULATED_TODAY);
@@ -3877,26 +3947,26 @@ function applyFiltersAndStats() {
     // Year filter check
     const yearMatch = targetYear === 'all' || (item.expDate.getFullYear() === Number(targetYear));
     if (!yearMatch) return false;
-    
+
     // Month filter check (based on end date)
     const monthMatch = selectedMonth === 'all' || (item.expDate.getMonth() === Number(selectedMonth));
     if (!monthMatch) return false;
-    
+
     const bucket = getDaysBucket(item.daysLeft);
     const isSent = sentSet.has(item.id);
-    
+
     if (activeStatusFilter === 'all') return true;
     if (activeStatusFilter === 'expired') return bucket === 'expired';
     if (activeStatusFilter === 'today') return bucket === 'today';
     if (activeStatusFilter === '3') return bucket === 'today' || bucket === 'days1' || bucket === 'days3';
     if (activeStatusFilter === '7') return ['today','days1','days3','days7'].includes(bucket);
     if (activeStatusFilter === 'unsent') return item.daysLeft <= 7 && !isSent;
-    
+
   });
 
   // Sort the filtered data based on user selection
   const sortBy = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'expiry-asc';
-  
+
   filteredData.sort((a, b) => {
     if (sortBy === 'expiry-asc') {
       return a.daysLeft - b.daysLeft;
@@ -3925,7 +3995,7 @@ function applyFiltersAndStats() {
 
   renderTable(sentSet);
   updateSelectedCount();
-  
+
   // Real-time charts refresh hook
   if (currentView === 'analytics') {
     renderAnalyticsCharts();
@@ -3944,18 +4014,18 @@ function renderTable(sentSet) {
   const tbody = document.getElementById('registerTableBody');
   const empty = document.getElementById('emptyRegisterState');
   const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-  
+
   tbody.innerHTML = '';
   if (selectAllCheckbox) selectAllCheckbox.checked = false;
-  
+
   const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
   if (currentPage < 1) currentPage = 1;
-  
+
   const startIdx = (currentPage - 1) * rowsPerPage;
   const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
   const pageData = filteredData.slice(startIdx, endIdx);
-  
+
   const rangeEl = document.getElementById('paginationRange');
   const totalEl = document.getElementById('paginationTotal');
   const currentEl = document.getElementById('currentPageNum');
@@ -3969,7 +4039,7 @@ function renderTable(sentSet) {
     if (pagControls) pagControls.style.display = 'none';
     return;
   }
-  
+
   empty.style.display = 'none';
   if (pagControls) pagControls.style.display = 'flex';
   if (rangeEl) rangeEl.textContent = `${startIdx + 1}-${endIdx}`;
@@ -3978,7 +4048,7 @@ function renderTable(sentSet) {
   if (totalPageEl) totalPageEl.textContent = totalPages;
   if (btnPrev) btnPrev.disabled = currentPage === 1;
   if (btnNext) btnNext.disabled = currentPage === totalPages;
-  
+
   pageData.forEach((item, index) => {
     const bucket = getDaysBucket(item.daysLeft);
     const label = formatDaysLabel(item.daysLeft);
@@ -3994,7 +4064,7 @@ function renderTable(sentSet) {
         ? `<a href="${bdayUrl}" target="_blank" class="btn-wa-action birthday sent" onclick="markAsSent('${item.id}_bday')" title="Resend Birthday Wishes"><i class="fa-solid fa-cake-candles"></i> Wished</a>`
         : `<a href="${bdayUrl}" target="_blank" class="btn-wa-action birthday" onclick="markAsSent('${item.id}_bday')" title="Send Birthday Wishes"><i class="fa-solid fa-cake-candles"></i> Wish Birthday</a>`;
     }
-    
+
     // Detect data warnings
     let integrityHelp = '';
     if (!item.phone || item.phone.length < 8) {
@@ -4003,16 +4073,16 @@ function renderTable(sentSet) {
     if (!item.policy_no) {
       integrityHelp += `<span class="integrity-alert" style="color:var(--text-muted);"><i class="fa-solid fa-circle-question"></i> No Policy No</span>`;
     }
-    
+
     const waUrl = buildWhatsAppLink(item);
-    
-    const btnWa = isSent 
+
+    const btnWa = isSent
       ? `<a href="${waUrl}" target="_blank" class="btn-wa-action sent" onclick="markAsSent('${item.id}')"><i class="fa-solid fa-circle-check"></i> Resend</a>`
       : `<a href="${waUrl}" target="_blank" class="btn-wa-action" onclick="markAsSent('${item.id}')"><i class="fa-brands fa-whatsapp"></i> Send</a>`;
-      
+
     // Style provider tag class
     const insClass = item.insurance.toLowerCase().replace(/\s+/g, '');
-    
+
     // Document Button Builders
     let policyBtn = '';
     if (item.policy_doc) {
@@ -4020,7 +4090,7 @@ function renderTable(sentSet) {
       if (isLocalMissing) {
         policyBtn = `<button class="btn-doc local-missing" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Policy PDF stored locally on uploading device only (not synced to cloud)"><i class="fa-solid fa-shield-halved"></i></button>`;
       } else {
-        policyBtn = `<button class="btn-doc active-pdf" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Download Policy PDF: ${item.policy_doc.name}"><i class="fa-solid fa-file-pdf"></i></button>`;
+        policyBtn = `<button class="btn-doc active-pdf" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Preview Policy PDF: ${item.policy_doc.name}"><i class="fa-solid fa-file-pdf"></i></button>`;
       }
     } else {
       policyBtn = `<button class="btn-doc empty-doc" onclick="openEditModal(${item.originalIdx})" title="No Policy PDF uploaded (Click to edit)"><i class="fa-regular fa-file"></i></button>`;
@@ -4031,17 +4101,17 @@ function renderTable(sentSet) {
     if (hasKyc) {
       const kycCount = item.kyc_docs ? item.kyc_docs.length : 1;
       const kycTitle = item.kyc_docs ? item.kyc_docs.map(d => d.name).join(', ') : item.kyc_doc.name;
-      
+
       const kycList = item.kyc_docs ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
       const allLocalMissing = kycList.every(d => d.localOnly && !d.data);
       const someLocalMissing = kycList.some(d => d.localOnly && !d.data);
-      
+
       if (allLocalMissing) {
         kycBtn = `<button class="btn-doc local-missing" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="KYC files stored locally on uploading device only (not synced to cloud)"><i class="fa-solid fa-shield-halved"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       } else if (someLocalMissing) {
-        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Download KYC Document(s) (Some files stored on uploading device only)"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
+        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Preview KYC Document(s) (Some files stored on uploading device only)"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       } else {
-        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Download KYC Document(s) (${kycCount} files): ${kycTitle}"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--purple);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
+        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Preview KYC Document(s) (${kycCount} files): ${kycTitle}"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--purple);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       }
     } else {
       kycBtn = `<button class="btn-doc empty-doc" onclick="openEditModal(${item.originalIdx})" title="No KYC Document uploaded (Click to edit)"><i class="fa-regular fa-id-card"></i></button>`;
@@ -4108,7 +4178,7 @@ function changePage(dir) {
   currentPage += dir;
   if (currentPage > totalPages) currentPage = totalPages;
   if (currentPage < 1) currentPage = 1;
-  
+
   const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
   renderTable(sentSet);
 }
@@ -4137,7 +4207,7 @@ function updateSelectedCount() {
   document.getElementById('selectedCount').textContent = count;
   document.getElementById('btnSendBulk').disabled = count === 0;
   document.getElementById('btnDeleteSelected').disabled = count === 0;
-  
+
   // highlight selected rows
   document.querySelectorAll('.row-cb').forEach(cb => {
     const row = document.getElementById(`row-${cb.dataset.id}`);
@@ -4154,12 +4224,12 @@ function updateSelectedCount() {
 function buildWhatsAppLink(item) {
   const template = storage.getItem('whatsapp_template');
   const phone = item.phone.replace(/[^0-9]/g, '');
-  
-  const statusStr = item.daysLeft < 0 
+
+  const statusStr = item.daysLeft < 0
     ? `has already EXPIRED on ${formatDate(item.end_date)}`
-    : item.daysLeft === 0 
+    : item.daysLeft === 0
     ? `expires TODAY!`
-    : item.daysLeft === 1 
+    : item.daysLeft === 1
     ? `expires TOMORROW!`
     : `will expire in ${item.daysLeft} days on ${formatDate(item.end_date)}`;
 
@@ -4180,7 +4250,7 @@ function buildWhatsAppLink(item) {
 function buildWhatsAppBirthdayLink(item) {
   const template = storage.getItem('birthday_template') || '';
   const phone = item.phone.replace(/[^0-9]/g, '');
-  
+
   const msg = template
     .replace(/{name}/g, item.name)
     .replace(/{remarks}/g, item.notes || 'None')
@@ -4193,7 +4263,7 @@ function markAsSent(id) {
   const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
   sentSet.add(id);
   storage.setItem('waSent', JSON.stringify([...sentSet]));
-  
+
   const cleanId = id.endsWith('_bday') ? id.slice(0, -5) : id;
   const item = DATA.find(x => String(x.id) === String(cleanId));
   if (item) {
@@ -4203,7 +4273,7 @@ function markAsSent(id) {
       logActivity(`💬 WhatsApp opened for client: ${item.name}`, "info");
     }
   }
-  
+
   // Quick timeout to update UI state
   setTimeout(() => applyFiltersAndStats(), 1000);
 }
@@ -4212,13 +4282,13 @@ function checkDailyAlerts(force = false) {
   const bdays = [];
   const renewals = [];
   const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
-  
+
   DATA.forEach(item => {
     // Check birthdays
     if (isSameDayAndMonth(item.dob, SIMULATED_TODAY)) {
       bdays.push(item);
     }
-    
+
     // Check renewals due today
     const exp = new Date(item.end_date);
     exp.setHours(0,0,0,0);
@@ -4227,16 +4297,16 @@ function checkDailyAlerts(force = false) {
       renewals.push({ ...item, daysLeft: diff });
     }
   });
-  
+
   if (bdays.length === 0 && renewals.length === 0) {
     if (force) {
       showToast("No alerts or birthdays for today!");
     }
     return;
   }
-  
+
   let html = '';
-  
+
   if (bdays.length > 0) {
     html += `
       <div style="margin-bottom: 20px;">
@@ -4267,7 +4337,7 @@ function checkDailyAlerts(force = false) {
       </div>
     `;
   }
-  
+
   if (renewals.length > 0) {
     html += `
       <div>
@@ -4298,10 +4368,10 @@ function checkDailyAlerts(force = false) {
       </div>
     `;
   }
-  
+
   document.getElementById('alertsModalContent').innerHTML = html;
   document.getElementById('alertsModalSummary').textContent = `${bdays.length} Birthday(s), ${renewals.length} Renewal(s) due today`;
-  
+
   openModal('dailyAlertsModal');
 }
 
@@ -4309,12 +4379,12 @@ function checkDailyAlerts(force = false) {
 function triggerBulkSend() {
   const checkboxes = document.querySelectorAll('.row-cb:checked');
   if (checkboxes.length === 0) return;
-  
+
   const targetIds = Array.from(checkboxes).map(cb => String(cb.dataset.id));
-  
+
   if (confirm(`You have queued ${targetIds.length} WhatsApp reminders. Because of browser security, we will open them in separate tabs. Please enable popups! Proceed?`)) {
     let index = 0;
-    
+
     function sendNext() {
       if (index >= targetIds.length) {
         showToast(`Dispatched all ${targetIds.length} reminders!`);
@@ -4323,18 +4393,18 @@ function triggerBulkSend() {
         applyFiltersAndStats();
         return;
       }
-      
+
       const targetId = targetIds[index];
       const item = DATA.find(x => String(x.id) === targetId);
       if (item) {
         const link = buildWhatsAppLink(item);
         window.open(link, '_blank');
-        
+
         const sentSet = new Set(JSON.parse(storage.getItem('waSent') || '[]'));
         sentSet.add(targetId);
         storage.setItem('waSent', JSON.stringify([...sentSet]));
       }
-      
+
       index++;
       setTimeout(sendNext, 2000); // 2 second delay to protect popup blockers
     }
@@ -4351,7 +4421,7 @@ function exportExcel() {
     showToast("No data in the ledger to export!", true);
     return;
   }
-  
+
   try {
     // Format rows for Excel export
     const excelRows = DATA.map((item, index) => ({
@@ -4371,12 +4441,12 @@ function exportExcel() {
     const worksheet = XLSX.utils.json_to_sheet(excelRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Insurance Register");
-    
+
     // Save file
     const targetYear = document.getElementById('targetYearFilter').value;
     const filename = `Insurance_Register_Ledger_${targetYear !== 'all' ? targetYear : 'All'}.xlsx`;
     XLSX.writeFile(workbook, filename);
-    
+
     showToast("Excel spreadsheet downloaded successfully!");
     logActivity(`📤 Exported Excel spreadsheet: "${filename}"`, "info");
   } catch(err) {
@@ -4409,7 +4479,7 @@ function triggerJSONBackupSelect() {
 function handleJSONBackupSelect(input) {
   const file = input.files[0];
   if (!file) return;
-  
+
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
@@ -4418,13 +4488,13 @@ function handleJSONBackupSelect(input) {
         showToast("Invalid backup file! Must be a list of records.", true);
         return;
       }
-      
+
       const isValid = parsed.length === 0 || parsed.every(item => item && typeof item === 'object' && ('name' in item) && ('vehicle' in item));
       if (!isValid) {
         showToast("Incorrect ledger backup structure!", true);
         return;
       }
-      
+
       if (confirm(`You are importing a backup with ${parsed.length} policies. Would you like to OVERWRITE your current database?\n\n(Click 'OK' to OVERWRITE entirely, or click 'Cancel' to MERGE/APPEND records to your current list).`)) {
         // Overwrite
         (async () => {
@@ -4443,9 +4513,9 @@ function handleJSONBackupSelect(input) {
         // Merge/Append
         const initialLength = DATA.length;
         parsed.forEach(newItem => {
-          const exists = DATA.some(oldItem => 
-            oldItem.name === newItem.name && 
-            oldItem.plate === newItem.plate && 
+          const exists = DATA.some(oldItem =>
+            oldItem.name === newItem.name &&
+            oldItem.plate === newItem.plate &&
             oldItem.end_date === newItem.end_date
           );
           if (!exists) {
@@ -4492,7 +4562,7 @@ function updateTemplatePreview() {
     daysLeft: 3,
     notes: "Awaiting client response"
   };
-  
+
   const statusStr = `will expire in 3 days on ${formatDate(mockItem.end_date)}`;
 
   const preview = template
@@ -4535,14 +4605,14 @@ function wipeEntireRegister() {
     req.onsuccess = async function() {
       // Clear localStorage backups
       storage.removeItem('insurance_ledger_backup');
-      
+
       // Clear Firestore
       const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
       if (isCloudEnabled && firebaseInitialized) {
         showToast("🗑️ Wiping Cloud Sync Database...");
         await clearCloudDatabase();
       }
-      
+
       DATA = [];
       applyFiltersAndStats();
       showToast("Ledger register wiped successfully!", true);
@@ -4586,7 +4656,7 @@ function closeAllDropdowns() {
   const sidebar = document.getElementById('appSidebar');
   const overlay = document.getElementById('sidebarOverlay');
   const dropdown = document.getElementById('mobileActionsDropdown');
-  
+
   if (sidebar) sidebar.classList.remove('active');
   if (overlay) overlay.classList.remove('active');
   if (dropdown) dropdown.classList.remove('active');
@@ -4597,7 +4667,7 @@ window.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('active');
   }
-  
+
   // Mobile actions click outside check
   const wrapper = document.querySelector('.mobile-actions-wrapper');
   if (wrapper && !wrapper.contains(e.target)) {
@@ -4614,15 +4684,15 @@ function openSecuritySettingsModal() {
   const fbEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   document.getElementById('settingsFirebaseEnabled').checked = fbEnabled;
   toggleFirebaseInputs(fbEnabled);
-  
+
   // Load Google Drive Config
   const gdEnabled = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
   document.getElementById('settingsGoogleDriveEnabled').checked = gdEnabled;
   toggleGoogleDriveInputs(gdEnabled);
-  
+
   document.getElementById('settingsGoogleDriveWebAppUrl').value = storage.getItem('MMC_GDRIVE_WEBAPP_URL') || '';
   document.getElementById('settingsGoogleDriveFolderId').value = storage.getItem('MMC_GDRIVE_FOLDER_ID') || '';
-  
+
   openModal('securitySettingsModal');
 }
 
@@ -4630,18 +4700,18 @@ function saveSecuritySettings() {
   // Save Firebase configuration
   const fbEnabled = document.getElementById('settingsFirebaseEnabled').checked;
   storage.setItem('MMC_FIREBASE_ENABLED', fbEnabled ? "true" : "false");
-  
+
   // Save Google Drive configuration
   const gdEnabled = document.getElementById('settingsGoogleDriveEnabled').checked;
   storage.setItem('MMC_GDRIVE_ENABLED', gdEnabled ? "true" : "false");
   storage.setItem('MMC_GDRIVE_WEBAPP_URL', document.getElementById('settingsGoogleDriveWebAppUrl').value.trim());
   storage.setItem('MMC_GDRIVE_FOLDER_ID', document.getElementById('settingsGoogleDriveFolderId').value.trim());
-  
+
   // Re-initialize Firebase if enabled
   if (fbEnabled) {
     initFirebase();
   }
-  
+
   closeModal('securitySettingsModal');
   showToast("Security and Storage settings saved successfully!");
   logActivity("⚙️ Settings updated.", "info");
@@ -4657,7 +4727,7 @@ let storageCloud = null;
 function initFirebase() {
   const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   if (!isCloudEnabled) return false;
-  
+
   try {
     if (firebase.apps.length === 0) {
       firebase.initializeApp(firebaseConfig);
@@ -4695,17 +4765,17 @@ function toggleGoogleDriveInputs(enabled) {
 
 async function testFirebaseCloudConnection() {
   showToast("Testing Cloud Connection...");
-  
+
   try {
     const testAppName = "MMC_TEST_APP_" + Date.now();
     const testApp = firebase.initializeApp(firebaseConfig, testAppName);
     const testDb = testApp.firestore();
-    
+
     const testDocRef = testDb.collection("_connection_test").doc("ping");
     await testDocRef.set({ timestamp: Date.now(), client: "Midas Money Care" });
     await testDocRef.delete();
     await testApp.delete();
-    
+
     showToast("✅ Firebase connection tested successfully! Ready for Cloud Sync.");
     logActivity("☁️ Firebase test connection ping successful.", "info");
   } catch(e) {
@@ -4717,18 +4787,18 @@ async function testFirebaseCloudConnection() {
 async function clearCloudDatabase() {
   const isCloudEnabled = storage.getItem('MMC_FIREBASE_ENABLED') === "true";
   if (!isCloudEnabled || !firebaseInitialized) return;
-  
+
   try {
     const querySnapshot = await dbCloud.collection("policies").get();
     const batch = dbCloud.batch();
-    
+
     for (const doc of querySnapshot.docs) {
       const dbId = doc.id;
       const data = doc.data();
-      
+
       // Delete document
       batch.delete(doc.ref);
-      
+
       // Delete files from storage if we have storageCloud
       if (storageCloud) {
         if (data.policy_doc) {
@@ -4741,7 +4811,7 @@ async function clearCloudDatabase() {
         }
       }
     }
-    
+
     await batch.commit();
     logActivity("☁️ Cloud registry database wiped completely.", "err");
   } catch(err) {
@@ -4758,17 +4828,17 @@ async function uploadPolicyToFirebase(entry) {
     const cloudEntry = { ...entry };
     delete cloudEntry._synced;
     const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
-    
+
     // Upload Policy PDF
     if (entry.policy_doc) {
       const sizeToCheck = entry.policy_doc.isMultiPage
         ? JSON.stringify(entry.policy_doc.pages).length
         : (entry.policy_doc.data ? entry.policy_doc.data.length : 0);
-        
+
       const isInline = sizeToCheck < 800000;
       const isNewUpload = (entry.policy_doc.data && entry.policy_doc.data.startsWith('data:')) ||
         (entry.policy_doc.isMultiPage && entry.policy_doc.pages && entry.policy_doc.pages.length > 0 && !entry.policy_doc.url);
-        
+
       if (isNewUpload) {
         if (isInline) {
           // Keep it inline in the database to avoid Storage CORS issues and save space
@@ -4807,7 +4877,7 @@ async function uploadPolicyToFirebase(entry) {
         }
       }
     }
-    
+
     // Upload KYC Documents
     if (Array.isArray(entry.kyc_docs) && entry.kyc_docs.length > 0) {
       try {
@@ -4817,11 +4887,11 @@ async function uploadPolicyToFirebase(entry) {
           const sizeToCheck = doc.isMultiPage
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
-            
+
           const isInline = sizeToCheck < 800000;
           const isNewUpload = (doc.data && doc.data.startsWith('data:')) ||
             (doc.isMultiPage && doc.pages && doc.pages.length > 0 && !doc.url);
-            
+
           if (isNewUpload) {
             if (isInline) {
               uploadedDocs.push(doc); // Save inline in database
@@ -4863,7 +4933,7 @@ async function uploadPolicyToFirebase(entry) {
           const sizeToCheck = doc.isMultiPage
             ? JSON.stringify(doc.pages).length
             : (doc.data ? doc.data.length : 0);
-            
+
           if (sizeToCheck < 800000) {
             fallbackDocs.push(doc);
           } else {
@@ -4878,7 +4948,7 @@ async function uploadPolicyToFirebase(entry) {
         cloudEntry.kyc_doc = fallbackDocs.length > 0 ? fallbackDocs[0] : null;
       }
     }
-    
+
     await dbCloud.collection("policies").doc(docId).set(cloudEntry);
     logActivity(`☁️ Cloud Synced: ${entry.name} saved to Firebase.`, "info");
   } finally {
@@ -4891,29 +4961,29 @@ async function uploadPolicyToFirebase(entry) {
 async function uploadFileToGoogleDrive(doc) {
   const webAppUrl = storage.getItem('MMC_GDRIVE_WEBAPP_URL');
   const folderId = storage.getItem('MMC_GDRIVE_FOLDER_ID') || '';
-  
+
   if (!webAppUrl) {
     throw new Error("Google Apps Script Web App URL is not configured.");
   }
-  
+
   let base64 = doc.data;
   let mimeType = doc.type;
   let fileName = doc.name;
-  
+
   if (doc.isMultiPage || doc.pages) {
     const jsonStr = JSON.stringify(doc.pages);
     base64 = 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(jsonStr)));
     mimeType = 'application/json';
     fileName = doc.name.substring(0, doc.name.lastIndexOf('.')) + '_pages.json';
   }
-  
+
   const payload = {
     base64: base64,
     mimeType: mimeType,
     fileName: fileName,
     folderId: folderId
   };
-  
+
   const response = await fetch(webAppUrl, {
     method: 'POST',
     mode: 'cors',
@@ -4922,16 +4992,16 @@ async function uploadFileToGoogleDrive(doc) {
     },
     body: JSON.stringify(payload)
   });
-  
+
   if (!response.ok) {
     throw new Error(`Google Drive upload failed with status ${response.status}`);
   }
-  
+
   const result = await response.json();
   if (!result.success) {
     throw new Error(result.error || "Google Apps Script returned failure.");
   }
-  
+
   return result.fileUrl;
 }
 
@@ -4944,7 +5014,7 @@ function uploadBase64ToStorage(path, doc) {
     const storageRef = storageCloud.ref().child(path);
     let blob;
     let mime;
-    
+
     if (doc.isMultiPage || doc.pages) {
       const jsonStr = JSON.stringify(doc.pages);
       mime = 'application/json';
@@ -4953,7 +5023,7 @@ function uploadBase64ToStorage(path, doc) {
       const parts = doc.data.split(',');
       const base64Data = parts[1];
       mime = doc.type || 'application/octet-stream';
-      
+
       const binary = atob(base64Data);
       const array = [];
       for (let i = 0; i < binary.length; i++) {
@@ -4961,11 +5031,11 @@ function uploadBase64ToStorage(path, doc) {
       }
       blob = new Blob([new Uint8Array(array)], { type: mime });
     }
-    
+
     const uploadTask = storageRef.put(blob);
-    uploadTask.on('state_changed', 
-      null, 
-      (error) => { reject(error); }, 
+    uploadTask.on('state_changed',
+      null,
+      (error) => { reject(error); },
       () => {
         uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
           resolve(downloadURL);
@@ -4980,13 +5050,13 @@ async function syncLocalToCloud() {
     showToast("No local records to upload!", true);
     return;
   }
-  
+
   const fbEnabled = document.getElementById('settingsFirebaseEnabled').checked;
   if (!fbEnabled) {
     showToast("Please enable Cloud Sync first!", true);
     return;
   }
-  
+
   try {
     if (firebase.apps.length === 0 || !firebaseInitialized) {
       firebase.initializeApp(firebaseConfig);
@@ -4998,15 +5068,15 @@ async function syncLocalToCloud() {
     showToast("❌ Could not connect to Cloud. Check configuration in code and try again.", true);
     return;
   }
-  
+
   const btn = document.getElementById('btnSyncLocalToCloud');
   const oldText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
-  
+
   let successCount = 0;
   showToast(`Starting upload of ${DATA.length} local records to Cloud...`);
-  
+
   for (let i = 0; i < DATA.length; i++) {
     try {
       await uploadPolicyToFirebase(DATA[i]);
@@ -5015,10 +5085,10 @@ async function syncLocalToCloud() {
       console.error(`Sync error on item ${i}:`, err);
     }
   }
-  
+
   btn.disabled = false;
   btn.innerHTML = oldText;
-  
+
   showToast(`✅ Successfully uploaded ${successCount} of ${DATA.length} records!`);
   logActivity(`☁️ Manual Bulk Sync: Uploaded ${successCount} records to Firebase Cloud database.`, "info");
 }
@@ -5026,25 +5096,25 @@ async function syncLocalToCloud() {
 function populateYearFilter() {
   const select = document.getElementById('targetYearFilter');
   if (!select) return;
-  
+
   select.innerHTML = '';
-  
+
   // All Years option
   const optAll = document.createElement('option');
   optAll.value = 'all';
   optAll.textContent = 'All Years';
   optAll.selected = true; // Select "All Years" by default!
   select.appendChild(optAll);
-  
+
   // Populate from 2026 to current year + 30 years dynamically!
   const startYear = 2026;
   const currentYear = new Date().getFullYear();
   const endYear = Math.max(currentYear + 30, 2056);
-  
+
   for (let year = startYear; year <= endYear; year++) {
     const opt = document.createElement('option');
     opt.value = String(year);
-    
+
     // Leap year check
     const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     opt.textContent = `${year} Fiscal${isLeap ? ' (Leap)' : ''}`;
@@ -5082,13 +5152,13 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch (err) {
     console.error("Flatpickr initialization failed:", err);
   }
-  
+
   // Pre-load and enable private Firebase Cloud Sync silently on first run or if never initialized
   const fbEnabled = storage.getItem('MMC_FIREBASE_ENABLED');
   if (fbEnabled === null || fbEnabled === undefined) {
     storage.setItem('MMC_FIREBASE_ENABLED', 'true'); // Auto-enable Cloud Sync!
   }
-  
+
   setTimeout(() => {
     initFirebase();
   }, 800);
