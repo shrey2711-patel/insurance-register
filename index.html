@@ -2709,24 +2709,20 @@ function downloadAllPagesAsPdf() {
 // File helper: download base64 documents safely in client-side
 function downloadDoc(idx, type) {
   const item = DATA[idx];
-  let doc = null;
-
   if (type === 'policy') {
-    doc = item.policy_doc;
+    const doc = item.policy_doc;
+    if (!doc) return;
+    triggerFileDownload(doc, item.name);
   } else {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
 
-    if (docs.length === 1) {
-      doc = docs[0];
-    } else {
-      showCombinedKycViewer(docs, item.name);
-      return;
-    }
+    docs.forEach((doc, dIdx) => {
+      setTimeout(() => {
+        triggerFileDownload(doc, item.name);
+      }, dIdx * 350);
+    });
   }
-
-  if (!doc) return;
-  loadAndShowDocumentInViewer(doc, item.name);
 }
 
 async function loadAndShowDocumentInViewer(doc, clientName) {
@@ -4090,7 +4086,7 @@ function renderTable(sentSet) {
       if (isLocalMissing) {
         policyBtn = `<button class="btn-doc local-missing" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Policy PDF stored locally on uploading device only (not synced to cloud)"><i class="fa-solid fa-shield-halved"></i></button>`;
       } else {
-        policyBtn = `<button class="btn-doc active-pdf" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Preview Policy PDF: ${item.policy_doc.name}"><i class="fa-solid fa-file-pdf"></i></button>`;
+        policyBtn = `<button class="btn-doc active-pdf" onclick="downloadDoc(${item.originalIdx}, 'policy')" title="Download Policy PDF: ${item.policy_doc.name}"><i class="fa-solid fa-file-pdf"></i></button>`;
       }
     } else {
       policyBtn = `<button class="btn-doc empty-doc" onclick="openEditModal(${item.originalIdx})" title="No Policy PDF uploaded (Click to edit)"><i class="fa-regular fa-file"></i></button>`;
@@ -4109,9 +4105,9 @@ function renderTable(sentSet) {
       if (allLocalMissing) {
         kycBtn = `<button class="btn-doc local-missing" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="KYC files stored locally on uploading device only (not synced to cloud)"><i class="fa-solid fa-shield-halved"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       } else if (someLocalMissing) {
-        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Preview KYC Document(s) (Some files stored on uploading device only)"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
+        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Download KYC Document(s) (Some files stored on uploading device only)"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--orange);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       } else {
-        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Preview KYC Document(s) (${kycCount} files): ${kycTitle}"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--purple);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
+        kycBtn = `<button class="btn-doc active-kyc" onclick="downloadDoc(${item.originalIdx}, 'kyc')" title="Download KYC Document(s) (${kycCount} files): ${kycTitle}"><i class="fa-solid fa-id-card"></i><span style="font-size:8px;position:absolute;bottom:-2px;right:-2px;background:var(--purple);color:#fff;border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid #161b22;">${kycCount}</span></button>`;
       }
     } else {
       kycBtn = `<button class="btn-doc empty-doc" onclick="openEditModal(${item.originalIdx})" title="No KYC Document uploaded (Click to edit)"><i class="fa-regular fa-id-card"></i></button>`;
