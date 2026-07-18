@@ -21,6 +21,11 @@
 <!-- Flatpickr (Modern Date Picker) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- PDF.js library for auto-compressing PDF files into images on upload -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 
 <style>
   :root {
@@ -1886,7 +1891,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.4.0";
+const CURRENT_VERSION = "1.5.1";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2266,8 +2271,8 @@ function compressImageBase64(file) {
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
-        const maxWidth = 1200;
-        const maxHeight = 1200;
+        const maxWidth = 1600;
+        const maxHeight = 1600;
         let width = img.width;
         let height = img.height;
         
@@ -2287,7 +2292,7 @@ function compressImageBase64(file) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
         
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(compressedDataUrl);
       };
       img.onerror = () => {
@@ -2300,7 +2305,40 @@ function compressImageBase64(file) {
   });
 }
 
-// File helper: Convert file inputs to Base64 objects (compresses images automatically!)
+// Compress PDF helper using PDF.js
+function compressPdfToImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = async (e) => {
+      try {
+        const typedarray = new Uint8Array(e.target.result);
+        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+        const page = await pdf.getPage(1);
+        
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedDataUrl);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+// File helper: Convert file inputs to Base64 objects (compresses images/PDFs automatically!)
 function getFileData(fileInput) {
   return new Promise(async (resolve) => {
     const file = fileInput.files[0];
@@ -2318,6 +2356,25 @@ function getFileData(fileInput) {
         data: compressedData
       });
       return;
+    }
+    
+    // Check if PDF for auto-compression
+    if (file.type === 'application/pdf') {
+      try {
+        showToast("📄 Compressing PDF into a lightweight image...");
+        const compressedData = await compressPdfToImage(file);
+        const originalName = file.name;
+        const newName = originalName.substring(0, originalName.lastIndexOf('.')) + '_page1.jpg';
+        
+        resolve({
+          name: newName,
+          type: 'image/jpeg',
+          data: compressedData
+        });
+        return;
+      } catch (err) {
+        console.warn("PDF compression failed, falling back to original PDF upload:", err);
+      }
     }
     
     // Check file size limits (Allow up to 10MB universally)
@@ -2343,7 +2400,7 @@ function getFileData(fileInput) {
   });
 }
 
-// File helper: Convert file inputs to multiple Base64 objects (compresses images automatically!)
+// File helper: Convert file inputs to multiple Base64 objects (compresses images/PDFs automatically!)
 function getMultipleFilesData(fileInput) {
   return new Promise(async (resolve) => {
     const files = fileInput.files;
@@ -2356,11 +2413,28 @@ function getMultipleFilesData(fileInput) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       let docData = null;
+      let finalType = file.type;
+      let finalName = file.name;
       
       if (file.type.startsWith('image/')) {
         docData = await compressImageBase64(file);
+        finalType = 'image/jpeg';
+      } else if (file.type === 'application/pdf') {
+        try {
+          showToast("📄 Compressing PDF into a lightweight image...");
+          docData = await compressPdfToImage(file);
+          finalType = 'image/jpeg';
+          finalName = file.name.substring(0, file.name.lastIndexOf('.')) + '_page1.jpg';
+        } catch (err) {
+          console.warn("PDF compression failed, falling back to original PDF upload:", err);
+          docData = await new Promise((resolveFile) => {
+            const reader = new FileReader();
+            reader.onload = function(e) { resolveFile(e.target.result); };
+            reader.onerror = function() { resolveFile(null); };
+            reader.readAsDataURL(file);
+          });
+        }
       } else {
-        // Check file size limits (Allow up to 10MB universally)
         const limit = 10 * 1024 * 1024;
         if (file.size > limit) {
           showToast(`⚠️ File "${file.name}" exceeds the 10MB limit!`, true);
@@ -2381,8 +2455,8 @@ function getMultipleFilesData(fileInput) {
       
       if (docData) {
         results.push({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image/jpeg' : file.type,
+          name: finalName,
+          type: finalType,
           data: docData
         });
       }
