@@ -26,6 +26,9 @@
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 </script>
+<!-- JSZip & jsPDF for Multi-Page document downloads and merges -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
   :root {
@@ -1757,6 +1760,28 @@
   </div>
 </div>
 
+<!-- 7. MULTI-PAGE DOCUMENT VIEWER MODAL -->
+<div class="modal-overlay" id="documentViewerModal">
+  <div class="modal" style="max-width: 800px; width: 90%; border-top: 5px solid var(--accent);">
+    <div class="modal-header">
+      <h2 id="docViewerTitle"><i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> Document Viewer</h2>
+      <button class="modal-close" onclick="closeModal('documentViewerModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="max-height: 70vh; overflow-y: auto; text-align: center; background: #0f141c; padding: 20px;">
+      <div id="docViewerPagesContainer" style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+        <!-- Pages rendered as img tags here -->
+      </div>
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" id="btnDownloadZip" onclick="downloadAllPagesAsZip()"><i class="fa-solid fa-file-zipper" style="color:var(--purple);"></i> Download ZIP (All Pages)</button>
+        <button class="btn btn-primary" id="btnDownloadPdf" onclick="downloadAllPagesAsPdf()"><i class="fa-solid fa-file-pdf"></i> Download PDF (All Pages)</button>
+      </div>
+      <button class="btn btn-secondary" onclick="closeModal('documentViewerModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- SECURITY & API SETTINGS MODAL -->
 <div class="modal-overlay" id="securitySettingsModal">
   <div class="modal" style="max-width: 580px;">
@@ -1891,7 +1916,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.5.1";
+const CURRENT_VERSION = "1.6.0";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2305,8 +2330,8 @@ function compressImageBase64(file) {
   });
 }
 
-// Compress PDF helper using PDF.js
-function compressPdfToImage(file) {
+// Compress PDF helper using PDF.js (processes all pages)
+function compressPdfToPages(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
@@ -2314,22 +2339,45 @@ function compressPdfToImage(file) {
       try {
         const typedarray = new Uint8Array(e.target.result);
         const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-        const page = await pdf.getPage(1);
+        const numPages = pdf.numPages;
+        const pages = [];
         
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
+        // Dynamically optimize scale & quality based on total pages to stay under ~200KB total if possible
+        let scale = 2.0;
+        let quality = 0.65;
+        if (numPages > 1) {
+          if (numPages <= 3) {
+            scale = 1.5;
+            quality = 0.55;
+          } else {
+            scale = 1.2;
+            quality = 0.45;
+          }
+        }
         
-        const renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-        
-        await page.render(renderContext).promise;
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        resolve(compressedDataUrl);
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          
+          const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+          };
+          
+          await page.render(renderContext).promise;
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          pages.push({
+            data: compressedDataUrl,
+            width: viewport.width,
+            height: viewport.height
+          });
+        }
+        resolve(pages);
       } catch (err) {
         reject(err);
       }
@@ -2361,15 +2409,14 @@ function getFileData(fileInput) {
     // Check if PDF for auto-compression
     if (file.type === 'application/pdf') {
       try {
-        showToast("📄 Compressing PDF into a lightweight image...");
-        const compressedData = await compressPdfToImage(file);
-        const originalName = file.name;
-        const newName = originalName.substring(0, originalName.lastIndexOf('.')) + '_page1.jpg';
+        showToast("📄 Compressing all pages of PDF...");
+        const pages = await compressPdfToPages(file);
         
         resolve({
-          name: newName,
-          type: 'image/jpeg',
-          data: compressedData
+          name: file.name,
+          type: 'application/pdf',
+          isMultiPage: true,
+          pages: pages
         });
         return;
       } catch (err) {
@@ -2421,10 +2468,15 @@ function getMultipleFilesData(fileInput) {
         finalType = 'image/jpeg';
       } else if (file.type === 'application/pdf') {
         try {
-          showToast("📄 Compressing PDF into a lightweight image...");
-          docData = await compressPdfToImage(file);
-          finalType = 'image/jpeg';
-          finalName = file.name.substring(0, file.name.lastIndexOf('.')) + '_page1.jpg';
+          showToast("📄 Compressing all pages of PDF...");
+          const pages = await compressPdfToPages(file);
+          results.push({
+            name: file.name,
+            type: 'application/pdf',
+            isMultiPage: true,
+            pages: pages
+          });
+          continue;
         } catch (err) {
           console.warn("PDF compression failed, falling back to original PDF upload:", err);
           docData = await new Promise((resolveFile) => {
@@ -2500,23 +2552,106 @@ function previewUploadFilesMultiple(input, previewId) {
   }
 }
 
+let currentViewerDoc = null;
+let currentViewerClientName = '';
+
+async function downloadAllPagesAsZip() {
+  if (!currentViewerDoc || !currentViewerDoc.pages) return;
+  showToast("📦 Creating ZIP file...");
+  try {
+    const zip = new JSZip();
+    const nameNoExt = currentViewerDoc.name.substring(0, currentViewerDoc.name.lastIndexOf('.')) || currentViewerDoc.name;
+    
+    currentViewerDoc.pages.forEach((page, idx) => {
+      const parts = page.data.split(';base64,');
+      const base64Data = parts[1];
+      zip.file(`${nameNoExt}_page_${idx + 1}.jpg`, base64Data, { base64: true });
+    });
+    
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nameNoExt}_all_pages.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("📥 ZIP downloaded!");
+  } catch (err) {
+    console.error("ZIP creation failed:", err);
+    showToast("❌ Failed to create ZIP", true);
+  }
+}
+
+function downloadAllPagesAsPdf() {
+  if (!currentViewerDoc || !currentViewerDoc.pages) return;
+  showToast("📄 Creating merged PDF...");
+  try {
+    const { jsPDF } = window.jspdf;
+    const pages = currentViewerDoc.pages;
+    const firstPage = pages[0];
+    
+    const orientation = firstPage.width > firstPage.height ? 'l' : 'p';
+    const doc = new jsPDF(orientation, 'px', [firstPage.width, firstPage.height]);
+    
+    pages.forEach((page, idx) => {
+      if (idx > 0) {
+        doc.addPage([page.width, page.height], page.width > page.height ? 'l' : 'p');
+      }
+      doc.addImage(page.data, 'JPEG', 0, 0, page.width, page.height);
+    });
+    
+    doc.save(currentViewerDoc.name);
+    showToast("📥 PDF downloaded!");
+  } catch (err) {
+    console.error("PDF creation failed:", err);
+    showToast("❌ Failed to create PDF", true);
+  }
+}
+
 // File helper: download base64 documents safely in client-side
 function downloadDoc(idx, type) {
   const item = DATA[idx];
+  let doc = null;
+  
   if (type === 'policy') {
-    const doc = item.policy_doc;
-    if (!doc) return;
-    triggerFileDownload(doc, item.name);
+    doc = item.policy_doc;
   } else {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
     
-    // Download each file sequentially with a 350ms delay to prevent browser blockages
-    docs.forEach((doc, dIdx) => {
-      setTimeout(() => {
-        triggerFileDownload(doc, item.name);
-      }, dIdx * 350);
-    });
+    if (docs.length === 1 && (docs[0].isMultiPage || docs[0].pages)) {
+      doc = docs[0];
+    } else {
+      docs.forEach((d, dIdx) => {
+        setTimeout(() => {
+          triggerFileDownload(d, item.name);
+        }, dIdx * 350);
+      });
+      return;
+    }
+  }
+  
+  if (!doc) return;
+  
+  if (doc.isMultiPage || doc.pages) {
+    currentViewerDoc = doc;
+    currentViewerClientName = item.name;
+    
+    document.getElementById('docViewerTitle').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:var(--accent);"></i> ${doc.name} — ${item.name}`;
+    
+    const pagesContainer = document.getElementById('docViewerPagesContainer');
+    pagesContainer.innerHTML = doc.pages.map((page, pIdx) => `
+      <div style="background: #1e2530; padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom:15px;">
+        <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-align: left; font-weight: 600;">Page ${pIdx + 1} of ${doc.pages.length}</div>
+        <img src="${page.data}" style="max-width: 100%; height: auto; border-radius: 4px;" alt="Page ${pIdx + 1}">
+      </div>
+    `).join('');
+    
+    openModal('documentViewerModal');
+  } else {
+    triggerFileDownload(doc, item.name);
   }
 }
 
