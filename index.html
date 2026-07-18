@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.2";
+const CURRENT_VERSION = "1.8.3";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -4823,206 +4823,132 @@ async function uploadPolicyToFirebase(entry) {
   if (!firebaseInitialized) return;
   const docId = String(entry.id);
   uploadingDocIds.add(docId);
+
+  // Helper: process a single document object for cloud storage.
+  // Returns { cloudDoc, localDoc } — cloudDoc goes to Firestore, localDoc stays in IndexedDB.
+  async function processDocForCloud(doc, storagePath) {
+    if (!doc) return { cloudDoc: null, localDoc: null };
+
+    // Strip the isNew flag from what we store
+    const cleanDoc = { ...doc };
+    delete cleanDoc.isNew;
+
+    // If not a new upload, pass through as-is
+    if (!doc.isNew) {
+      return { cloudDoc: cleanDoc, localDoc: cleanDoc };
+    }
+
+    // It is a new upload — compute its size
+    const size = doc.isMultiPage
+      ? JSON.stringify(doc.pages || []).length
+      : (doc.data ? doc.data.length : 0);
+
+    // If small enough, keep inline in Firestore
+    if (size < 800000) {
+      return { cloudDoc: cleanDoc, localDoc: cleanDoc };
+    }
+
+    // Too large — try uploading to Storage/Drive
+    const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
+    try {
+      let fileUrl = '';
+      if (isGoogleDrive) {
+        fileUrl = await uploadFileToGoogleDrive(doc);
+      } else {
+        fileUrl = await uploadBase64ToStorage(storagePath, doc);
+      }
+      const cloudDoc = {
+        name: doc.name,
+        type: doc.type,
+        isMultiPageCloud: doc.isMultiPage ? true : false,
+        url: fileUrl
+      };
+      // Local copy retains the binary so the uploading device can view it instantly
+      return { cloudDoc, localDoc: cleanDoc };
+    } catch (err) {
+      console.warn(`Storage upload failed for ${storagePath}:`, err);
+      showToast("⚠️ File too large for cloud sync; stored locally only.", true);
+      const localOnlyDoc = { name: doc.name, type: doc.type, localOnly: true };
+      return { cloudDoc: localOnlyDoc, localDoc: cleanDoc };
+    }
+  }
+
   try {
-    // Clone to avoid editing local state
     const cloudEntry = { ...entry };
     delete cloudEntry._synced;
-    const isGoogleDrive = storage.getItem('MMC_GDRIVE_ENABLED') === "true";
 
-    let totalInlineSize = 0;
-
-    // Upload Policy PDF
+    // --- Policy Document ---
     if (entry.policy_doc) {
-      const doc = entry.policy_doc;
-      const sizeToCheck = doc.isMultiPage
-        ? JSON.stringify(doc.pages).length
-        : (doc.data ? doc.data.length : 0);
-
-      // Keep inline only if it is under 800KB
-      const isInline = sizeToCheck < 800000;
-      const isNewUpload = !!doc.isNew;
-
-      if (isNewUpload) {
-        if (isInline) {
-          // Keep it inline in the database to avoid Storage CORS issues and save space
-          const cleanDoc = { ...doc };
-          delete cleanDoc.isNew;
-          cloudEntry.policy_doc = cleanDoc;
-          totalInlineSize += sizeToCheck;
-        } else {
-          // If it exceeds 800KB, upload to Storage/Drive
-          try {
-            let fileUrl = '';
-            if (isGoogleDrive) {
-              showToast("☁️ Uploading Policy PDF to Google Drive...");
-              fileUrl = await uploadFileToGoogleDrive(doc);
-            } else {
-              showToast("☁️ Uploading Policy PDF to Cloud Storage...");
-              fileUrl = await uploadBase64ToStorage(`policies/${docId}/policy_doc`, doc);
-            }
-            cloudEntry.policy_doc = {
-              name: doc.name,
-              type: doc.type,
-              isMultiPageCloud: doc.isMultiPage ? true : false,
-              url: fileUrl
-            };
-          } catch(err) {
-            console.warn("Storage upload failed, handling fallback for Policy PDF:", err);
-            cloudEntry.policy_doc = {
-              name: doc.name,
-              type: doc.type,
-              localOnly: true
-            };
-            showToast("⚠️ Policy PDF too large for free cloud sync; stored locally on this device.", true);
-          }
-        }
-      } else {
-        const cleanDoc = { ...doc };
-        delete cleanDoc.isNew;
-        cloudEntry.policy_doc = cleanDoc;
-        if (cleanDoc.pages) {
-          totalInlineSize += JSON.stringify(cleanDoc.pages).length;
-        } else if (cleanDoc.data) {
-          totalInlineSize += cleanDoc.data.length;
-        }
-      }
+      const { cloudDoc, localDoc } = await processDocForCloud(
+        entry.policy_doc,
+        `policies/${docId}/policy_doc`
+      );
+      cloudEntry.policy_doc = cloudDoc;
+      // Keep full local binary in a side-channel so local writeback can use it
+      cloudEntry.__localPolicyDoc = localDoc;
     }
 
-    // Normalize KYC files list for compatibility with historical single kyc_doc entries
-    const kycList = Array.isArray(entry.kyc_docs) ? entry.kyc_docs : (entry.kyc_doc ? [entry.kyc_doc] : []);
+    // --- KYC Documents ---
+    // Normalise: support both old kyc_doc (single) and new kyc_docs (array)
+    const kycList = Array.isArray(entry.kyc_docs)
+      ? entry.kyc_docs
+      : (entry.kyc_doc ? [entry.kyc_doc] : []);
 
-    // Upload KYC Documents
     if (kycList.length > 0) {
-      try {
-        const uploadedDocs = [];
-        for (let i = 0; i < kycList.length; i++) {
-          const doc = kycList[i];
-          if (!doc) continue;
-
-          const sizeToCheck = doc.isMultiPage
-            ? JSON.stringify(doc.pages).length
-            : (doc.data ? doc.data.length : 0);
-
-          // Save inline only if the cumulative inline size stays under 800KB
-          const isInline = (totalInlineSize + sizeToCheck) < 800000;
-          const isNewUpload = !!doc.isNew;
-
-          if (isNewUpload) {
-            if (isInline) {
-              const cleanDoc = { ...doc };
-              delete cleanDoc.isNew;
-              uploadedDocs.push(cleanDoc); // Save inline in database
-              totalInlineSize += sizeToCheck;
-            } else {
-              try {
-                let fileUrl = '';
-                if (isGoogleDrive) {
-                  fileUrl = await uploadFileToGoogleDrive(doc);
-                } else {
-                  fileUrl = await uploadBase64ToStorage(`policies/${docId}/kyc_doc_${i}`, doc);
-                }
-                uploadedDocs.push({
-                  name: doc.name,
-                  type: doc.type,
-                  isMultiPageCloud: doc.isMultiPage ? true : false,
-                  url: fileUrl
-                });
-              } catch(storageErr) {
-                console.warn(`Storage upload failed for KYC doc ${i}:`, storageErr);
-                uploadedDocs.push({
-                  name: doc.name,
-                  type: doc.type,
-                  localOnly: true
-                });
-                showToast("⚠️ KYC document too large for free cloud sync; stored locally on this device.", true);
-              }
-            }
-          } else {
-            const cleanDoc = { ...doc };
-            delete cleanDoc.isNew;
-            if (cleanDoc.pages) {
-              totalInlineSize += JSON.stringify(cleanDoc.pages).length;
-            } else if (cleanDoc.data) {
-              totalInlineSize += cleanDoc.data.length;
-            }
-            uploadedDocs.push(cleanDoc); // Preserve existing URL or inline item
-          }
-        }
-        cloudEntry.kyc_docs = uploadedDocs;
-        cloudEntry.kyc_doc = uploadedDocs.length > 0 ? uploadedDocs[0] : null;
-      } catch(err) {
-        console.warn("Storage upload failed, using direct database fallback for KYC Documents:", err);
-        const fallbackDocs = [];
-        for (let i = 0; i < kycList.length; i++) {
-          const doc = kycList[i];
-          if (!doc) continue;
-
-          const sizeToCheck = doc.isMultiPage
-            ? JSON.stringify(doc.pages).length
-            : (doc.data ? doc.data.length : 0);
-
-          if (sizeToCheck < 800000) {
-            const cleanDoc = { ...doc };
-            delete cleanDoc.isNew;
-            fallbackDocs.push(cleanDoc);
-          } else {
-            fallbackDocs.push({
-              name: doc.name,
-              type: doc.type,
-              localOnly: true
-            });
-          }
-        }
-        cloudEntry.kyc_docs = fallbackDocs;
-        cloudEntry.kyc_doc = fallbackDocs.length > 0 ? fallbackDocs[0] : null;
+      const cloudKycDocs = [];
+      const localKycDocs = [];
+      for (let i = 0; i < kycList.length; i++) {
+        const doc = kycList[i];
+        if (!doc) continue;
+        const { cloudDoc, localDoc } = await processDocForCloud(
+          doc,
+          `policies/${docId}/kyc_doc_${i}`
+        );
+        if (cloudDoc) cloudKycDocs.push(cloudDoc);
+        if (localDoc) localKycDocs.push(localDoc);
       }
+      cloudEntry.kyc_docs = cloudKycDocs;
+      cloudEntry.kyc_doc = cloudKycDocs.length > 0 ? cloudKycDocs[0] : null;
+      cloudEntry.__localKycDocs = localKycDocs;
+    } else {
+      // No KYC docs — preserve whatever is already in the cloud entry
+      cloudEntry.kyc_docs = cloudEntry.kyc_docs || [];
+      cloudEntry.kyc_doc = cloudEntry.kyc_doc || null;
     }
 
+    // Pull out the side-channel locals before writing to Firestore
+    const localPolicyDoc = cloudEntry.__localPolicyDoc;
+    const localKycDocs = cloudEntry.__localKycDocs;
+    delete cloudEntry.__localPolicyDoc;
+    delete cloudEntry.__localKycDocs;
+
+    // Write to Firestore
     await dbCloud.collection("policies").doc(docId).set(cloudEntry);
     logActivity(`☁️ Cloud Synced: ${entry.name} saved to Firebase.`, "info");
 
-    // Update local DATA array and local IndexedDB to match the synced cloud entry
+    // Write back to local DATA + IndexedDB, keeping binary data for instant local viewing
     const localIndex = DATA.findIndex(item => String(item.id) === docId);
     if (localIndex > -1) {
       const localEntry = { ...cloudEntry };
-      
-      if (entry.policy_doc) {
-        localEntry.policy_doc = {
-          ...cloudEntry.policy_doc,
-          data: entry.policy_doc.data || cloudEntry.policy_doc.data,
-          pages: entry.policy_doc.pages || cloudEntry.policy_doc.pages
-        };
-        delete localEntry.policy_doc.isNew;
+
+      if (localPolicyDoc) {
+        localEntry.policy_doc = localPolicyDoc;
       }
-      
-      if (Array.isArray(entry.kyc_docs)) {
-        localEntry.kyc_docs = cloudEntry.kyc_docs.map((cloudKyc, kIdx) => {
-          if (!cloudKyc) return cloudKyc;
-          const originalKyc = entry.kyc_docs[kIdx];
-          if (originalKyc) {
-            const mergedKyc = {
-              ...cloudKyc,
-              data: originalKyc.data || cloudKyc.data,
-              pages: originalKyc.pages || cloudKyc.pages
-            };
-            delete mergedKyc.isNew;
-            return mergedKyc;
-          }
-          return cloudKyc;
-        });
-        localEntry.kyc_doc = localEntry.kyc_docs.length > 0 ? localEntry.kyc_docs[0] : null;
+      if (localKycDocs) {
+        localEntry.kyc_docs = localKycDocs;
+        localEntry.kyc_doc = localKycDocs.length > 0 ? localKycDocs[0] : null;
       }
-      
+
       localEntry._synced = true;
       DATA[localIndex] = localEntry;
-      
-      const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      store.put(localEntry);
+
+      const tx = dbInstance.transaction([STORE_NAME], 'readwrite');
+      tx.objectStore(STORE_NAME).put(localEntry);
     }
-  } catch(err) {
+
+  } catch (err) {
     console.error("Cloud Sync write failed:", err);
-    showToast("❌ Cloud Sync Failed: check console or file sizes", true);
+    showToast("❌ Cloud Sync Failed — check console for details.", true);
   } finally {
     setTimeout(() => {
       uploadingDocIds.delete(docId);
