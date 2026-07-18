@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.7.4";
+const CURRENT_VERSION = "1.7.5";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2709,22 +2709,17 @@ function downloadAllPagesAsPdf() {
   }
 }
 
-// File helper: download/open base64 and cloud documents safely in client-side
+// File helper: open the viewer modal for documents
 function downloadDoc(idx, type) {
   const item = DATA[idx];
   if (type === 'policy') {
     const doc = item.policy_doc;
     if (!doc) return;
-    triggerFileDownload(doc, item.name);
+    loadAndShowDocumentInViewer(doc, item.name);
   } else {
     const docs = Array.isArray(item.kyc_docs) ? item.kyc_docs : (item.kyc_doc ? [item.kyc_doc] : []);
     if (docs.length === 0) return;
-
-    docs.forEach((doc, dIdx) => {
-      setTimeout(() => {
-        triggerFileDownload(doc, item.name);
-      }, dIdx * 350);
-    });
+    showCombinedKycViewer(docs, item.name);
   }
 }
 
