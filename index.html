@@ -1915,7 +1915,7 @@ if (typeof firebase !== 'undefined') {
 // AUTO-CACHE BUSTER & APP INITIALIZATION
 // =====================================================
 // Auto-Cache Buster Version Verification
-const CURRENT_VERSION = "1.8.3";
+const CURRENT_VERSION = "1.8.4";
 
 (async function checkAndBustCache() {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") {
@@ -2134,31 +2134,35 @@ function loadAllRecordsFromDB() {
             const localIndex = DATA.findIndex(item => String(item.id) === docIdStr);
             const localItem = localIndex > -1 ? DATA[localIndex] : null;
 
+            // Start from cloud data — cloud is the source of truth for metadata and URLs
             let mergedItem = { ...cloudItem };
+
             if (localItem) {
+              // Merge policy_doc: prefer local binary (data/pages) over cloud if present,
+              // but NEVER force undefined onto the merged object
               if (cloudItem.policy_doc) {
-                const localDoc = localItem.policy_doc;
-                if (localDoc) {
-                  mergedItem.policy_doc = {
-                    ...cloudItem.policy_doc,
-                    data: localDoc.data || cloudItem.policy_doc.data,
-                    pages: localDoc.pages || cloudItem.policy_doc.pages
-                  };
-                }
+                const localDoc = localItem.policy_doc || {};
+                const merged = { ...cloudItem.policy_doc };
+                // Only override if local actually has a real value
+                const localData = localDoc.data;
+                const localPages = localDoc.pages;
+                if (localData !== undefined && localData !== null) merged.data = localData;
+                if (localPages !== undefined && localPages !== null) merged.pages = localPages;
+                mergedItem.policy_doc = merged;
               }
 
+              // Merge kyc_docs array: same logic — only copy local binary if it exists
               if (Array.isArray(cloudItem.kyc_docs)) {
                 mergedItem.kyc_docs = cloudItem.kyc_docs.map((cloudKyc, kIdx) => {
                   if (!cloudKyc) return cloudKyc;
-                  const localKyc = Array.isArray(localItem.kyc_docs) ? localItem.kyc_docs[kIdx] : null;
-                  if (localKyc) {
-                    return {
-                      ...cloudKyc,
-                      data: localKyc.data || cloudKyc.data,
-                      pages: localKyc.pages || cloudKyc.pages
-                    };
-                  }
-                  return cloudKyc;
+                  const localKycs = Array.isArray(localItem.kyc_docs) ? localItem.kyc_docs : [];
+                  const localKyc = localKycs[kIdx] || {};
+                  const merged = { ...cloudKyc };
+                  const localData = localKyc.data;
+                  const localPages = localKyc.pages;
+                  if (localData !== undefined && localData !== null) merged.data = localData;
+                  if (localPages !== undefined && localPages !== null) merged.pages = localPages;
+                  return merged;
                 });
                 mergedItem.kyc_doc = mergedItem.kyc_docs.length > 0 ? mergedItem.kyc_docs[0] : null;
               }
@@ -4819,6 +4823,25 @@ async function clearCloudDatabase() {
   }
 }
 
+// Deep-remove any `undefined` values from an object so Firestore never rejects it.
+// Firestore only supports: string, number, boolean, null, array, map — NOT undefined.
+function sanitizeForFirestore(obj) {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore).filter(v => v !== undefined);
+  }
+  if (typeof obj === 'object') {
+    const out = {};
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val === undefined) continue; // drop undefined fields entirely
+      out[key] = sanitizeForFirestore(val);
+    }
+    return out;
+  }
+  return obj;
+}
+
 async function uploadPolicyToFirebase(entry) {
   if (!firebaseInitialized) return;
   const docId = String(entry.id);
@@ -4922,8 +4945,11 @@ async function uploadPolicyToFirebase(entry) {
     delete cloudEntry.__localPolicyDoc;
     delete cloudEntry.__localKycDocs;
 
+    // Sanitize before writing — Firestore rejects `undefined` values
+    const safeCloudEntry = sanitizeForFirestore(cloudEntry);
+
     // Write to Firestore
-    await dbCloud.collection("policies").doc(docId).set(cloudEntry);
+    await dbCloud.collection("policies").doc(docId).set(safeCloudEntry);
     logActivity(`☁️ Cloud Synced: ${entry.name} saved to Firebase.`, "info");
 
     // Write back to local DATA + IndexedDB, keeping binary data for instant local viewing
